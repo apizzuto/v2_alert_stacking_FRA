@@ -150,7 +150,13 @@ class UniversePlotter():
         plt.grid(lw=0.0)
         #plt.ylim(50, 55.5)
         plt.xlim(-11., -6.)
-        time_window_str = '{:.2e} s, '.format(self.delta_t) if self.transient else 'Time integrated, '
+        if self.transient:
+            if self.delta_t == 1e3:
+                time_window_str = r'$\pm 500$ s, '
+            else:
+                time_window_str = r'$\pm 1$ day, '
+        else:
+            time_window_str = 'Time integrated, '
         custom_labs = [Line2D([0], [0], color = 'k', lw=2., label='This analysis (' + time_window_str + '{:.1f} yr.)'.format(self.data_years))]
         if compare:
             custom_labs.append(Line2D([0], [0], color='grey', lw=2., label=comp_str))
@@ -248,7 +254,13 @@ class UniversePlotter():
         plt.ylim(np.log10(np.min(ys_min*xs)*3e-2), np.log10(np.max(ys_max*xs)*2))
         plt.ylabel(self.scaled_lumi_label, fontsize = 22)
         plt.xlabel(self.density_label, fontsize = 22)
-        time_window_str = '{:.2e} s, '.format(self.delta_t) if self.transient else 'Time integrated, '
+        if self.transient:
+            if self.delta_t == 1e3:
+                time_window_str = '$\pm 500$ s, '
+            else:
+                time_window_str = '$\pm 1$ day, '
+        else:
+            time_window_str = 'Time integrated, '
         custom_labs = [Line2D([0], [0], color = 'k', lw=2., label='This analysis (' + time_window_str + '{:.1f} yr.)'.format(self.data_years))]
         if compare:
             custom_labs.append(Line2D([0], [0], color='grey', lw=2., label=comp_str))
