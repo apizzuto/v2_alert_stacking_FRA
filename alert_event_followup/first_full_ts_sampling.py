@@ -6,6 +6,7 @@ import numpy as np
 from transient_universe import TransientUniverse
 from universe_analysis import UniverseAnalysis
 import argparse
+import time
 
 parser = argparse.ArgumentParser(description='Calculate TS distributions')
 parser.add_argument('--n', type=int, default=1000,
@@ -29,6 +30,8 @@ evol = args.evol
 lumi = args.LF 
 data_years = 8.6
 #only_gold = args.gold
+t0 = time.time()
+print("STARTING INITIALIZATION")
 
 #uni = UniverseAnalysis(lumi, evol, density, 1.01e-8, 2.19, deltaT=2*86400., 
 #        data_years=2, manual_lumi=args.manual_lumi)
@@ -36,6 +39,7 @@ uni = UniverseAnalysis(lumi, evol, density, 1.5e-8, 2.50, deltaT=args.delta_t,
         data_years=data_years, manual_lumi=args.manual_lumi)
 #uni = UniverseAnalysis(lumi, evol, density, 0.9e-8, 2.13, deltaT=args.delta_t,
 #        data_years=data_years, manual_lumi=args.manual_lumi)
+t1 = time.time()
 uni.print_analysis_info()
 #uni.initialize_universe()
 uni.make_alerts_dataframe()
@@ -54,11 +58,15 @@ for jj in range(args.n - 1):
     TS_gold.append(uni.calculate_ts(only_gold = True))
     ps.append(uni.calculate_binomial_pvalue(only_gold=False))
     ps_gold.append(uni.calculate_binomial_pvalue(only_gold=True))
+t2 = time.time()
 
 #TS = np.array(TS)
 #TS_gold = np.array(TS_gold)
 TS = np.array([TS, TS_gold, ps, ps_gold])
 lumi_str = '_manual_lumi_{:.1e}'.format(args.manual_lumi) if args.manual_lumi != 0.0 else ''
 
+print("INITIALIZATION: {:.2f}".format(t1 - t0))
+print("TRIALS: {:.2f}".format(t2-t1))
+print("TOTAL: {:.2f}".format(t2-t0))
 #print(TS)
-np.save('/data/user/apizzuto/fast_response_skylab/alert_event_followup/ts_distributions/ts_dists_{}year_density_{:.2e}_evol_{}_lumi_{}{}_delta_t_{:.2e}.npy'.format(data_years, density, evol, lumi, lumi_str, args.delta_t), TS)
+#np.save('/data/user/apizzuto/fast_response_skylab/alert_event_followup/ts_distributions/ts_dists_{}year_density_{:.2e}_evol_{}_lumi_{}{}_delta_t_{:.2e}.npy'.format(data_years, density, evol, lumi, lumi_str, args.delta_t), TS)
