@@ -24,7 +24,7 @@ from skylab.sensitivity_utils   import estimate_sensitivity
 from skylab.sensitivity_utils   import DeltaChiSquare
 from astropy.io                 import fits
 
-sys.path.append('/data/user/apizzuto/fast_response_skylab/fast-response/trunk/time_integrated_scripts/')
+sys.path.append('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/time_integrated_scripts/')
 from config_steady              import config
 
 ##################################### CONFIGURE ARGUMENTS #############################

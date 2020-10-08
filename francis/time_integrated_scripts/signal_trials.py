@@ -13,10 +13,8 @@ from skylab.ps_injector         import PointSourceInjector, PriorInjector
 from skylab.llh_models          import EnergyLLH, ClassicLLH
 from skylab.datasets            import Datasets
 from skylab.priors              import SpatialPrior
-from skylab.sensitivity_utils   import fit
-from skylab.test_statistics     import TestStatisticNotSeparated
 
-sys.path.append('/data/user/apizzuto/fast_response_skylab/fast-response/trunk/time_integrated_scripts/')
+sys.path.append('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/time_integrated_scripts/')
 from config_steady              import config
 
 
