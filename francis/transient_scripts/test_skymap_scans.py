@@ -1,8 +1,7 @@
 import healpy as hp                                  
 from glob import glob
 import sys
-sys.path.append('/data/user/apizzuto/fast_response_skylab/fast-response/trunk/')
-from FastResponseAnalysis import FastResponseAnalysis
+from fast_response.FastResponseAnalysis import FastResponseAnalysis
 from astropy.time import Time
 TSs = []; TSDs = []
 ps = []

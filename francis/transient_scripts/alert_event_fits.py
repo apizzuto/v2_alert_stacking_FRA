@@ -10,10 +10,7 @@ from astropy.io import fits
 from glob import glob
 import pickle
 
-base_path = os.path.join('/data/user/apizzuto/fast_response_skylab/fast-response/trunk/','')
-sys.path.append(base_path)
-
-from FastResponseAnalysis import FastResponseAnalysis
+from fast_response.FastResponseAnalysis import FastResponseAnalysis
 
 parser = argparse.ArgumentParser(description='Fast Response Analysis')
 parser.add_argument('--index', type=int,default=None,
