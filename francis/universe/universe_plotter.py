@@ -641,6 +641,107 @@ class UniversePlotter():
         sigs = np.delete(sigs_all, msk_inds)
         return sigs
 
+    def brazil_bands(self, in_ts=False, ts_vs_p=False):
+        r'''Two dimensional contour plot to show the sensitivity of the analysis
+        in the luminosity-density plane, with full brazil bands, not just the 
+        median upper limit
+
+        Parameters
+        ----------
+            - compare (bool): include constraints from previous analyses
+            - log_ts (bool): contour colors from log or linear ts values
+            - in_ts (bool): TS value or binomial-p value
+            - ts_vs_p (bool): compare TS and binomial-p value construction
+        '''
+        if in_ts or ts_vs_p:
+            if self.background_median_ts is None:
+                self.get_overall_background_ts()
+            if self.med_TS is None:
+                self.get_med_TS()
+        if (not in_ts) or ts_vs_p:
+            if self.background_median_p is None:
+                self.get_overall_background_p()
+            if self.med_p is None:
+                self.get_med_p()
+        fig, ax = plt.subplots(figsize=(8,5), dpi=200)
+        fig.set_facecolor('w')
+        X, Y = np.meshgrid(np.log10(self.densities), np.log10(self.plot_lumis))
+
+        levels = np.array([2.5, 16., 50., 84., 97.5])
+        lower_bound_comp = self.lower_10 if in_ts else self.lower_10_p
+        background_dist = self.stacked_ts if in_ts else self.stacked_p
+        comp_factor = 1. if in_ts else -1.
+
+        for level in levels:
+            linestyle='solid'
+            reference_val = np.percentile(background_dist, level)
+            print(reference_val)
+            sens_disc = comp_factor * (lower_bound_comp - reference_val)
+            cs_ts = ax.contour(X, Y, sens_disc, colors=['k'], 
+                            levels=[0.0], linewidths=2., linestyles=linestyle)
+
+        ########################
+       
+        # cmap = self.cmap if in_ts else ListedColormap(self.cmap.colors[::-1])
+        # extend = 'max' if in_ts else 'min'
+        # cs = ax.contour(X, Y, plot_vals, cmap=cmap, levels=levels, 
+        #                 #vmin=-0.5, 
+        #                 extend=extend)
+        # csf = ax.contourf(X, Y, plot_vals, cmap=cmap, levels=levels, 
+        #                 #vmin=-0.5, 
+        #                 extend=extend)
+        # cbar = plt.colorbar(csf) 
+        # if in_ts or ts_vs_p:
+        #     cbar_lab = r'Median Stacked TS' if not log_ts else r'$\log_{10}($Median Stacked TS$)$'
+        # else:
+        #     cbar_lab = r'Median binom. p' if not log_ts else r'$\log_{10}($Median binom. p$)$'
+        # cbar.set_label(cbar_lab, fontsize = 18)
+        # cbar.ax.tick_params(axis='y', direction='out')
+        # if in_ts or ts_vs_p:
+        #     if discovery:
+        #         sens_disc = self.med_TS - self.background_three_sigma_ts
+        #     else:
+        #         sens_disc = self.lower_10 - self.background_median_ts
+        #     cs_ts = ax.contour(X, Y, sens_disc, colors=['k'], 
+        #                     levels=[0.0], linewidths=2., zorder=10)
+        # if (not in_ts) or ts_vs_p:
+        #     linestyle = 'dashed' if ts_vs_p else 'solid'
+        #     if discovery:
+        #         sens_disc = self.background_three_sigma_p - self.med_p
+        #     else:
+        #         sens_disc = self.background_median_p - self.lower_10_p
+        #     cs_ts = ax.contour(X, Y, sens_disc, colors=['k'], 
+        #                     levels=[0.0], linewidths=2., linestyles=linestyle)
+        xs = np.logspace(-11., -6., 1000)
+        ys_max = self.no_evol_energy_density / xs / self.seconds_per_year if self.transient else self.no_evol_energy_density / xs
+        ys_min = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
+        plt.fill_between(np.log10(xs), np.log10(ys_min), np.log10(ys_max), 
+                color = 'm', alpha = 0.3, lw=0.0, zorder=10)
+        # if compare:
+        #     comp_rho, comp_en, comp_str = self.compare_other_analyses()
+        #     plt.plot(comp_rho, comp_en, color = 'gray', lw=2., zorder=5)
+        plt.text(-9, 54.1, 'Diffuse', color = 'm', rotation=-28, fontsize=18)
+        #plt.text(-10, 51.7, 'Sensitivity', color = 'k', rotation=-28, fontsize=18)
+        plt.grid(lw=0.0)
+        #plt.ylim(50, 55.5)
+        plt.xlim(-11., -6.)
+        if self.transient:
+            if self.delta_t == 1e3:
+                time_window_str = r'$\pm 500$ s, '
+            else:
+                time_window_str = r'$\pm 1$ day, '
+        else:
+            time_window_str = 'Time integrated, '
+        custom_labs = [Line2D([0], [0], color = 'k', lw=2., label='This analysis (' + time_window_str + '{:.1f} yr.)'.format(self.data_years))]
+        # if compare:
+        #     custom_labs.append(Line2D([0], [0], color='grey', lw=2., label=comp_str))
+        plt.legend(handles=custom_labs, loc=1)
+        plt.ylabel(self.lumi_label, fontsize = 22)
+        plt.xlabel(self.density_label, fontsize = 22)
+        title = self.lumi_str + ', ' + self.evol_str
+        plt.title(title)
+        #plt.show()
+
     def upper_limit_plot(self):
         pass
 
