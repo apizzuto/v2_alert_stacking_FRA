@@ -347,7 +347,7 @@ class UniversePlotter():
 
     def one_dim_ts_distributions(self, only_gold=False, in_ts = True, log_ts=True):
         r'''Assuming that the diffuse flux is saturated,
-        show brazil band plot that scans over density
+        show band plot that scans over density
         and shows the TS distributions'''
         ts_or_p = 0 if in_ts else 1
         ts_inds = (0, 2) if not only_gold else (1, 3)
@@ -667,51 +667,42 @@ class UniversePlotter():
         fig.set_facecolor('w')
         X, Y = np.meshgrid(np.log10(self.densities), np.log10(self.plot_lumis))
 
-        levels = np.array([2.5, 16., 50., 84., 97.5])
+        levels = np.array([16., 50., 84.])
         lower_bound_comp = self.lower_10 if in_ts else self.lower_10_p
         background_dist = self.stacked_ts if in_ts else self.stacked_p
         comp_factor = 1. if in_ts else -1.
 
-        for level in levels:
-            linestyle='solid'
-            reference_val = np.percentile(background_dist, level)
-            print(reference_val)
-            sens_disc = comp_factor * (lower_bound_comp - reference_val)
-            cs_ts = ax.contour(X, Y, sens_disc, colors=['k'], 
-                            levels=[0.0], linewidths=2., linestyles=linestyle)
+        #Plot median UL (sensitivity)
+        level = levels[len(levels)//2]
+        linestyle='solid'
+        reference_val = np.percentile(background_dist, level)
+        sens_disc = comp_factor * (lower_bound_comp - reference_val)
+        cs_ts = ax.contour(X, Y, sens_disc, colors=['k'], 
+                        levels=[0.0], linewidths=2., linestyles=linestyle)
 
-        ########################
-       
-        # cmap = self.cmap if in_ts else ListedColormap(self.cmap.colors[::-1])
-        # extend = 'max' if in_ts else 'min'
-        # cs = ax.contour(X, Y, plot_vals, cmap=cmap, levels=levels, 
-        #                 #vmin=-0.5, 
-        #                 extend=extend)
-        # csf = ax.contourf(X, Y, plot_vals, cmap=cmap, levels=levels, 
-        #                 #vmin=-0.5, 
-        #                 extend=extend)
-        # cbar = plt.colorbar(csf) 
-        # if in_ts or ts_vs_p:
-        #     cbar_lab = r'Median Stacked TS' if not log_ts else r'$\log_{10}($Median Stacked TS$)$'
-        # else:
-        #     cbar_lab = r'Median binom. p' if not log_ts else r'$\log_{10}($Median binom. p$)$'
-        # cbar.set_label(cbar_lab, fontsize = 18)
-        # cbar.ax.tick_params(axis='y', direction='out')
-        # if in_ts or ts_vs_p:
-        #     if discovery:
-        #         sens_disc = self.med_TS - self.background_three_sigma_ts
-        #     else:
-        #         sens_disc = self.lower_10 - self.background_median_ts
-        #     cs_ts = ax.contour(X, Y, sens_disc, colors=['k'], 
-        #                     levels=[0.0], linewidths=2., zorder=10)
-        # if (not in_ts) or ts_vs_p:
-        #     linestyle = 'dashed' if ts_vs_p else 'solid'
-        #     if discovery:
-        #         sens_disc = self.background_three_sigma_p - self.med_p
-        #     else:
-        #         sens_disc = self.background_median_p - self.lower_10_p
-        #     cs_ts = ax.contour(X, Y, sens_disc, colors=['k'], 
-        #                     levels=[0.0], linewidths=2., linestyles=linestyle)
+        # central 68% containment band
+        for band_num in range(len(levels)//2):
+            lower_level = levels[band_num]
+            upper_level = levels[-1*(band_num+1)]
+
+            reference_val_lower = np.percentile(background_dist, lower_level)
+            reference_val_upper = np.percentile(background_dist, upper_level)
+
+            sens_disc_lower = comp_factor * (lower_bound_comp - reference_val_lower)
+            sens_disc_upper = comp_factor * (lower_bound_comp - reference_val_upper)
+            # cs_ts = ax.contour(X, Y, sens_disc_lower, colors=['k'], 
+            #                     levels=[0.0], linewidths=1., linestyles='dashed')
+            # cs_ts = ax.contour(X, Y, sens_disc_upper, colors=['k'], 
+            #                     levels=[0.0], linewidths=1., linestyles='dashed')
+
+            sens_disc = sens_disc_lower * sens_disc_upper
+            #sens_disc /= np.abs(sens_disc)
+
+            cs_ts = ax.contour(X, Y, sens_disc, colors=['k'], 
+                                 levels=[0.0], linewidths=1., linestyles='dashed')
+            csf = ax.contourf(X, Y, sens_disc, cmap=self.cmap, 
+                                levels=[np.min(sens_disc), 0.0])
+            
         xs = np.logspace(-11., -6., 1000)
         ys_max = self.no_evol_energy_density / xs / self.seconds_per_year if self.transient else self.no_evol_energy_density / xs
         ys_min = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
@@ -722,15 +713,17 @@ class UniversePlotter():
         #     plt.plot(comp_rho, comp_en, color = 'gray', lw=2., zorder=5)
         plt.text(-9, 54.1, 'Diffuse', color = 'm', rotation=-28, fontsize=18)
         #plt.text(-10, 51.7, 'Sensitivity', color = 'k', rotation=-28, fontsize=18)
-        plt.grid(lw=0.0)
+        #plt.grid(lw=0.0)
         #plt.ylim(50, 55.5)
         plt.xlim(-11., -6.)
         if self.transient:
+            plt.ylim(50., 56.)
             if self.delta_t == 1e3:
                 time_window_str = r'$\pm 500$ s, '
             else:
                 time_window_str = r'$\pm 1$ day, '
         else:
+            plt.ylim(50., 56.)
             time_window_str = 'Time integrated, '
         custom_labs = [Line2D([0], [0], color = 'k', lw=2., label='This analysis (' + time_window_str + '{:.1f} yr.)'.format(self.data_years))]
         # if compare:
@@ -741,6 +734,9 @@ class UniversePlotter():
         title = self.lumi_str + ', ' + self.evol_str
         plt.title(title)
         #plt.show()
+
+    def brazil_bands_rotated(self, in_ts=False, ts_vs_p=False):
+        pass
 
     def upper_limit_plot(self):
         pass
