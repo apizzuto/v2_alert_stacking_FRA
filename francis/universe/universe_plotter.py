@@ -18,11 +18,28 @@ mpl.style.use('/home/apizzuto/Nova/scripts/novae_plots.mplstyle')
 #skymap_files = glob('/data/ana/realtime/alert_catalog_v2/2yr_prelim/fits_files/Run*.fits.gz')
 skymap_files = glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run1*.fits.gz')
 energy_density = {'transient': {'HB2006SFR': 4.8038e51, 
-                        'MD2014SFR': 6.196e51,
+                        'MD2014SFR': 7.099e51, #6.196e51, commented bc switch to cascades
                         'NoEvolution': 1.8364e52},
                 'steady': {'HB2006SFR': 7.6735e43, 
-                        'MD2014SFR': 9.897e+43,
+                        'MD2014SFR': 1.134e44, #9.897e+43, commented bc switch to cascades
                         'NoEvolution': 2.93335e44}}
+
+energy_density_uncertainty = {'transient': {
+                            'MD2014SFR': {'plus_one_sigma': 8.92e51,
+                                        'plus_two_sigma': 1.11e52,
+                                        'minus_one_sigma': 5.50e51,
+                                        'minus_two_sigma': 4.15e51},
+                            'HB2006SFR': {},
+                            'NoEvolution': {}
+                            },
+                'steady': {'MD2014SFR': {'plus_one_sigma': 1.425e44,
+                                        'plus_two_sigma': 1.776e44,
+                                        'minus_one_sigma': 8.785e43,
+                                        'minus_two_sigma': 6.627e43},
+                          'HB2006SFR': {},
+                          'NoEvolution': {}
+                          }}
+
 
 class UniversePlotter():
     r'''
@@ -54,6 +71,7 @@ class UniversePlotter():
         key = 'transient' if self.transient else 'steady'
         self.energy_density = energy_density[key][evol]
         self.no_evol_energy_density = energy_density[key]['NoEvolution']
+        self.energy_density_uncertainty = energy_density_uncertainty[key][evol]
         self.evol_lumi_str = 'evol_{}_lumi_{}'.format(self.evol, self.lumi)
         self.densities = np.logspace(-11., -6., 21)
         self.luminosities = np.logspace(49, 62, 53) if self.transient else np.logspace(49., 56., 29)
@@ -325,7 +343,7 @@ class UniversePlotter():
         for ii, lumi in enumerate(self.luminosities):
             for jj, dens in enumerate(self.densities):
                 test_en = lumi*dens*self.delta_t if self.transient else lumi*dens
-                if test_en > self.energy_density*5.:
+                if test_en > self.energy_density*3.:
                     lower_10_p[ii, jj] = 1e-10
                     med_p[ii, jj] = 1e-10
                 elif test_en < self.energy_density*3e-3:
@@ -663,9 +681,10 @@ class UniversePlotter():
                 self.get_med_p()
         fig, ax = plt.subplots(figsize=(8,5), dpi=200)
         fig.set_facecolor('w')
-        X, Y = np.meshgrid(np.log10(self.densities), np.log10(self.plot_lumis))
+        X, Y = np.meshgrid(self.densities, self.plot_lumis)
         if rotated:
             Y *= X
+        X = np.log10(X); Y = np.log10(Y)
 
         levels = np.array([16., 50., 84.])
         lower_bound_comp = self.lower_10 if in_ts else self.lower_10_p
@@ -694,28 +713,50 @@ class UniversePlotter():
 
             sens_disc = sens_disc_lower * sens_disc_upper
 
-            cs_ts_upper = ax.contour(X, Y, sens_disc_upper, colors=['k'], 
-                        levels=[0.0], linewidths=1., linestyles='dashed')
-            cs_ts_lower = ax.contour(X, Y, sens_disc_lower, colors=['k'], 
-                        levels=[0.0], linewidths=1., linestyles='dashed')           
-            # cs_ts = ax.contour(X, Y, sens_disc, colors=['k'], 
-            #                      levels=[0.0], linewidths=1., linestyles='dashed')
+            # cs_ts_upper = ax.contour(X, Y, sens_disc_upper, colors=['k'], 
+            #             levels=[0.0], linewidths=1.5, linestyles='dashed')
+            # cs_ts_lower = ax.contour(X, Y, sens_disc_lower, colors=['k'], 
+            #             levels=[0.0], linewidths=1.5, linestyles='dashed')           
+            cs_ts = ax.contour(X, Y, sens_disc, colors=['k'], 
+                                  levels=[0.0], linewidths=1.5, linestyles='dashed')
             csf = ax.contourf(X, Y, sens_disc, cmap=self.cmap, 
                                 levels=[np.min(sens_disc), 0.0])
-            ax.clabel(cs_ts_upper, cs_ts_upper.levels, inline=True, fmt='Central 68%', fontsize=14)
+            ax.clabel(cs_ts, cs_ts.levels, inline=True, fmt=r'$\pm 1 \sigma$', fontsize=14)
             
         xs = np.logspace(-11., -6., 1000)
-        ys_max = self.no_evol_energy_density / xs / self.seconds_per_year if self.transient else self.no_evol_energy_density / xs
-        ys_min = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
-        plt.fill_between(np.log10(xs), np.log10(ys_min), np.log10(ys_max), 
-                color = sns.xkcd_rgb['dodger blue'], alpha = 0.3, lw=0.0, zorder=10)
-        plt.text(-9, 54.1, 'Diffuse', color = sns.xkcd_rgb['dodger blue'], rotation=-28, fontsize=18)
+        ys_median = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
+        # ys_max = self.no_evol_energy_density / xs / self.seconds_per_year if self.transient else self.no_evol_energy_density / xs
+        # ys_min = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
+        if not rotated:
+            plt.plot(np.log10(xs), np.log10(ys_median), color = sns.xkcd_rgb['dodger blue'], lw=1.5)
+            for sig in ['one_sigma', 'two_sigma']:
+                upper_factor = self.energy_density_uncertainty['plus_'+sig] / self.energy_density
+                lower_factor = self.energy_density_uncertainty['minus_'+sig] / self.energy_density
+                alpha = 0.45 if sig is 'two_sigma' else 0.75
+                plt.fill_between(np.log10(xs), np.log10(ys_median * lower_factor), np.log10(ys_median * upper_factor), 
+                        color = sns.xkcd_rgb['dodger blue'], alpha = alpha, lw=0.0, zorder=10)
+        else:
+            plt.plot(np.log10(xs), np.log10(ys_median*xs), color = sns.xkcd_rgb['dodger blue'], lw=1.5)
+            for sig in ['one_sigma', 'two_sigma']:
+                upper_factor = self.energy_density_uncertainty['plus_'+sig] / self.energy_density
+                lower_factor = self.energy_density_uncertainty['minus_'+sig] / self.energy_density
+                alpha = 0.45 if sig is 'two_sigma' else 0.75
+                plt.fill_between(np.log10(xs), np.log10(ys_median * lower_factor * xs), np.log10(ys_median * upper_factor * xs), 
+                        color = sns.xkcd_rgb['dodger blue'], alpha = alpha, lw=0.0, zorder=10)
+        if rotated:
+            plt.text(-10, np.log10(np.max(ys_median*xs*upper_factor)*1.1), 'Diffuse', 
+                            color = sns.xkcd_rgb['dodger blue'], rotation=0, fontsize=18)
+        else:
+            plt.text(-9, 53.6, 'Diffuse', color = sns.xkcd_rgb['dodger blue'], rotation=-28, fontsize=18)
         plt.xlim(-11., -6.)
         if rotated:
-            plt.ylim(np.log10(np.min(ys_min*xs)*3e-2), np.log10(np.max(ys_max*xs)*2))
+            plt.ylim(np.log10(np.min(ys_median*xs)*1e-2), np.log10(np.max(ys_median*xs)*5))
             plt.ylabel(self.scaled_lumi_label, fontsize = 22)
         else:
-            plt.ylim(50., 56.)
+            if transient:
+                plt.ylim(50., 55.5)
+            else:
+                plt.ylim(50., 55.)
             plt.ylabel(self.lumi_label, fontsize = 22)
         if self.transient:
             if self.delta_t == 1e3:
@@ -725,14 +766,12 @@ class UniversePlotter():
         else:
             time_window_str = 'Time integrated, '
         custom_labs = [Line2D([0], [0], color = 'k', lw=2., label='This analysis (' + time_window_str + '{:.1f} yr.)'.format(self.data_years))]
-        plt.legend(handles=custom_labs, loc=1)
+        leg_loc = 4 if rotated else 1
+        plt.legend(handles=custom_labs, loc=leg_loc)
         plt.xlabel(self.density_label, fontsize = 22)
         title = self.lumi_str + ', ' + self.evol_str
         plt.title(title)
         #plt.show()
-
-    def brazil_bands_rotated(self, in_ts=False, ts_vs_p=False):
-        pass
 
     def upper_limit_plot(self):
         pass
