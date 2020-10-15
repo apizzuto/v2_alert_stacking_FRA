@@ -141,11 +141,11 @@ class UniversePlotter():
         ys_max = self.no_evol_energy_density / xs / self.seconds_per_year if self.transient else self.no_evol_energy_density / xs
         ys_min = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
         plt.fill_between(np.log10(xs), np.log10(ys_min), np.log10(ys_max), 
-                color = 'm', alpha = 0.3, lw=0.0, zorder=10)
+                color = sns.xkcd_rgb['dodger blue'], alpha = 0.3, lw=0.0, zorder=10)
         if compare:
             comp_rho, comp_en, comp_str = self.compare_other_analyses()
             plt.plot(comp_rho, comp_en, color = 'gray', lw=2., zorder=5)
-        plt.text(-9, 54.1, 'Diffuse', color = 'm', rotation=-28, fontsize=18)
+        plt.text(-9, 54.1, 'Diffuse', color = sns.xkcd_rgb['dodger blue'], rotation=-28, fontsize=18)
         #plt.text(-10, 51.7, 'Sensitivity', color = 'k', rotation=-28, fontsize=18)
         plt.grid(lw=0.0)
         #plt.ylim(50, 55.5)
@@ -243,11 +243,11 @@ class UniversePlotter():
         ys_max = self.no_evol_energy_density / xs / self.seconds_per_year if self.transient else self.no_evol_energy_density / xs
         ys_min = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
         plt.fill_between(np.log10(xs), np.log10(ys_min*xs), np.log10(ys_max*xs), 
-                color = 'm', alpha = 0.3, lw=0.0, zorder=10)
+                color = sns.xkcd_rgb['dodger blue'], alpha = 0.3, lw=0.0, zorder=10)
         if compare:
             comp_rho, comp_en, comp_str = self.compare_other_analyses()
             plt.plot(comp_rho, comp_rho+comp_en, color = 'gray', lw=2.) #damn look at that log property
-        plt.text(-10, np.log10(np.max(ys_max*xs)*1.1), 'Diffuse', color = 'm', rotation=0, fontsize=18)
+        plt.text(-10, np.log10(np.max(ys_max*xs)*1.1), 'Diffuse', color = sns.xkcd_rgb['dodger blue'], rotation=0, fontsize=18)
         #plt.text(-10, np.log10(np.min(ys_min*xs)*0.2), 'Sensitivity', color = 'k', rotation=0, fontsize=18)
         plt.grid(lw=0.0)
         plt.xlim(-11., -6.)
@@ -328,7 +328,7 @@ class UniversePlotter():
                 if test_en > self.energy_density*5.:
                     lower_10_p[ii, jj] = 1e-10
                     med_p[ii, jj] = 1e-10
-                elif test_en < self.energy_density*1e-4:
+                elif test_en < self.energy_density*3e-3:
                     lower_10_p[ii, jj] = self.background_lower_10_p
                     med_p[ii, jj] = self.background_median_p
                 else:
@@ -554,7 +554,7 @@ class UniversePlotter():
         ys_max = self.no_evol_energy_density / xs / self.seconds_per_year if self.transient else self.no_evol_energy_density / xs
         ys_min = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
         plt.fill_between(np.log10(xs), np.log10(ys_min), np.log10(ys_max), 
-                color = 'm', alpha = 0.3, lw=0.0, zorder=10)
+                color = sns.xkcd_rgb['dodger blue'], alpha = 0.3, lw=0.0, zorder=10)
         if not upper_limit:
             legend_elements = [Patch(facecolor=csf.cmap.colors[0], label='50\%'),
                         Patch(facecolor=csf.cmap.colors[-2], label='90\%')]
@@ -641,24 +641,22 @@ class UniversePlotter():
         sigs = np.delete(sigs_all, msk_inds)
         return sigs
 
-    def brazil_bands(self, in_ts=False, ts_vs_p=False):
+    def brazil_bands(self, in_ts=False, rotated=False):
         r'''Two dimensional contour plot to show the sensitivity of the analysis
         in the luminosity-density plane, with full brazil bands, not just the 
         median upper limit
 
         Parameters
         ----------
-            - compare (bool): include constraints from previous analyses
-            - log_ts (bool): contour colors from log or linear ts values
             - in_ts (bool): TS value or binomial-p value
-            - ts_vs_p (bool): compare TS and binomial-p value construction
+            - rotated (bool): Show typical Kowalski plot (false) or scale y-axis
         '''
-        if in_ts or ts_vs_p:
+        if in_ts:
             if self.background_median_ts is None:
                 self.get_overall_background_ts()
             if self.med_TS is None:
                 self.get_med_TS()
-        if (not in_ts) or ts_vs_p:
+        else:
             if self.background_median_p is None:
                 self.get_overall_background_p()
             if self.med_p is None:
@@ -666,6 +664,8 @@ class UniversePlotter():
         fig, ax = plt.subplots(figsize=(8,5), dpi=200)
         fig.set_facecolor('w')
         X, Y = np.meshgrid(np.log10(self.densities), np.log10(self.plot_lumis))
+        if rotated:
+            Y *= X
 
         levels = np.array([16., 50., 84.])
         lower_bound_comp = self.lower_10 if in_ts else self.lower_10_p
@@ -679,6 +679,7 @@ class UniversePlotter():
         sens_disc = comp_factor * (lower_bound_comp - reference_val)
         cs_ts = ax.contour(X, Y, sens_disc, colors=['k'], 
                         levels=[0.0], linewidths=2., linestyles=linestyle)
+        ax.clabel(cs_ts, cs_ts.levels, inline=True, fmt='Sensitivity', fontsize=14)
 
         # central 68% containment band
         for band_num in range(len(levels)//2):
@@ -690,46 +691,41 @@ class UniversePlotter():
 
             sens_disc_lower = comp_factor * (lower_bound_comp - reference_val_lower)
             sens_disc_upper = comp_factor * (lower_bound_comp - reference_val_upper)
-            # cs_ts = ax.contour(X, Y, sens_disc_lower, colors=['k'], 
-            #                     levels=[0.0], linewidths=1., linestyles='dashed')
-            # cs_ts = ax.contour(X, Y, sens_disc_upper, colors=['k'], 
-            #                     levels=[0.0], linewidths=1., linestyles='dashed')
 
             sens_disc = sens_disc_lower * sens_disc_upper
-            #sens_disc /= np.abs(sens_disc)
 
-            cs_ts = ax.contour(X, Y, sens_disc, colors=['k'], 
-                                 levels=[0.0], linewidths=1., linestyles='dashed')
+            cs_ts_upper = ax.contour(X, Y, sens_disc_upper, colors=['k'], 
+                        levels=[0.0], linewidths=1., linestyles='dashed')
+            cs_ts_lower = ax.contour(X, Y, sens_disc_lower, colors=['k'], 
+                        levels=[0.0], linewidths=1., linestyles='dashed')           
+            # cs_ts = ax.contour(X, Y, sens_disc, colors=['k'], 
+            #                      levels=[0.0], linewidths=1., linestyles='dashed')
             csf = ax.contourf(X, Y, sens_disc, cmap=self.cmap, 
                                 levels=[np.min(sens_disc), 0.0])
+            ax.clabel(cs_ts_upper, cs_ts_upper.levels, inline=True, fmt='Central 68%', fontsize=14)
             
         xs = np.logspace(-11., -6., 1000)
         ys_max = self.no_evol_energy_density / xs / self.seconds_per_year if self.transient else self.no_evol_energy_density / xs
         ys_min = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
         plt.fill_between(np.log10(xs), np.log10(ys_min), np.log10(ys_max), 
-                color = 'm', alpha = 0.3, lw=0.0, zorder=10)
-        # if compare:
-        #     comp_rho, comp_en, comp_str = self.compare_other_analyses()
-        #     plt.plot(comp_rho, comp_en, color = 'gray', lw=2., zorder=5)
-        plt.text(-9, 54.1, 'Diffuse', color = 'm', rotation=-28, fontsize=18)
-        #plt.text(-10, 51.7, 'Sensitivity', color = 'k', rotation=-28, fontsize=18)
-        #plt.grid(lw=0.0)
-        #plt.ylim(50, 55.5)
+                color = sns.xkcd_rgb['dodger blue'], alpha = 0.3, lw=0.0, zorder=10)
+        plt.text(-9, 54.1, 'Diffuse', color = sns.xkcd_rgb['dodger blue'], rotation=-28, fontsize=18)
         plt.xlim(-11., -6.)
-        if self.transient:
+        if rotated:
+            plt.ylim(np.log10(np.min(ys_min*xs)*3e-2), np.log10(np.max(ys_max*xs)*2))
+            plt.ylabel(self.scaled_lumi_label, fontsize = 22)
+        else:
             plt.ylim(50., 56.)
+            plt.ylabel(self.lumi_label, fontsize = 22)
+        if self.transient:
             if self.delta_t == 1e3:
                 time_window_str = r'$\pm 500$ s, '
             else:
                 time_window_str = r'$\pm 1$ day, '
         else:
-            plt.ylim(50., 56.)
             time_window_str = 'Time integrated, '
         custom_labs = [Line2D([0], [0], color = 'k', lw=2., label='This analysis (' + time_window_str + '{:.1f} yr.)'.format(self.data_years))]
-        # if compare:
-        #     custom_labs.append(Line2D([0], [0], color='grey', lw=2., label=comp_str))
         plt.legend(handles=custom_labs, loc=1)
-        plt.ylabel(self.lumi_label, fontsize = 22)
         plt.xlabel(self.density_label, fontsize = 22)
         title = self.lumi_str + ', ' + self.evol_str
         plt.title(title)
