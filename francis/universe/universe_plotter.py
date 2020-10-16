@@ -659,7 +659,7 @@ class UniversePlotter():
         sigs = np.delete(sigs_all, msk_inds)
         return sigs
 
-    def brazil_bands(self, in_ts=False, rotated=False):
+    def brazil_bands(self, in_ts=False, rotated=False, compare=False):
         r'''Two dimensional contour plot to show the sensitivity of the analysis
         in the luminosity-density plane, with full brazil bands, not just the 
         median upper limit
@@ -668,6 +668,7 @@ class UniversePlotter():
         ----------
             - in_ts (bool): TS value or binomial-p value
             - rotated (bool): Show typical Kowalski plot (false) or scale y-axis
+            - compare (bool): compare to other icecube analyses
         '''
         if in_ts:
             if self.background_median_ts is None:
@@ -753,7 +754,7 @@ class UniversePlotter():
             plt.ylim(np.log10(np.min(ys_median*xs)*1e-2), np.log10(np.max(ys_median*xs)*5))
             plt.ylabel(self.scaled_lumi_label, fontsize = 22)
         else:
-            if transient:
+            if self.transient:
                 plt.ylim(50., 55.5)
             else:
                 plt.ylim(50., 55.)
@@ -765,7 +766,15 @@ class UniversePlotter():
                 time_window_str = r'$\pm 1$ day, '
         else:
             time_window_str = 'Time integrated, '
+        if compare:
+            comp_rho, comp_en, comp_str = self.compare_other_analyses()
+            if not rotated:
+                plt.plot(comp_rho, comp_en, color = 'gray', lw=2.)
+            else:
+                plt.plot(comp_rho, comp_rho+comp_en, color = 'gray', lw=2.) #damn look at that log property
         custom_labs = [Line2D([0], [0], color = 'k', lw=2., label='This analysis (' + time_window_str + '{:.1f} yr.)'.format(self.data_years))]
+        if compare:
+            custom_labs.append(Line2D([0], [0], color='grey', lw=2., label=comp_str))
         leg_loc = 4 if rotated else 1
         plt.legend(handles=custom_labs, loc=leg_loc)
         plt.xlabel(self.density_label, fontsize = 22)
