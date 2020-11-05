@@ -89,6 +89,7 @@ class Universe():
                     sig_alerts[stream + '_' + cut][ind] = (Ns[ind], sigs[ind], nexps[ind])
                 kept_inds = kept_inds | set(non_zero_inds)
         kept_inds = np.array(list(kept_inds))
+        self.kept_inds = kept_inds #keep track for looking at redshifts
         #print(kept_inds)
         #print("BEFORE TRIM")
         #print(len(self.sources['dec']))
