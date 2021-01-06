@@ -9,6 +9,7 @@ import os, sys, pickle
 import numpy as np 
 import healpy as hp
 from time import time
+import pandas as pd
 
 from   glob                     import glob
 from   skylab.ps_llh            import PointSourceLLH, MultiPointSourceLLH
@@ -54,12 +55,21 @@ def config(alert_ind, seed = 1, scramble = True, e_range=(0,np.inf), g_range=[1.
     #seasons = [("GFU_v002_p05", "IC86, 2011-2018"),
     #            (GFU_v002_p05", "IC86, 2019")]
 
-
-    #skymap_files = glob('/data/ana/realtime/alert_catalog_v2/2yr_prelim/fits_files/Run13*.fits.gz')
     skymap_files = glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run1*.fits.gz')
     skymap_fits, skymap_header = hp.read_map(skymap_files[alert_ind], h=True, verbose=False)
     skymap_header = {name: val for name, val in skymap_header}
     run_id, ev_id = skymap_header['RUNID'], skymap_header['EVENTID']
+
+    # Check to make sure there aren't any indexing errors
+    alert_df = pd.read_csv('/data/user/apizzuto/fast_response_skylab/alert' +
+        '_event_followup/FRANCIS/francis/icecube_misc/alert_dataframe.csv')
+    df_entry = alert_df.iloc[alert_ind]
+
+    assert df_entry['Run ID'] == run_id, \
+        "Dataframe run ID does not match the fits file run ID"
+    assert df_entry['Event ID'] == ev_id, \
+        "Dataframe event ID does not match the fits file event ID"
+
     ev_mjd = skymap_header['EVENTMJD']
     ev_iso = skymap_header['START']
     signalness = skymap_header['SIGNAL']
