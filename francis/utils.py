@@ -1,3 +1,4 @@
+import os
 import matplotlib as mpl
 mpl.use('Agg')
 
@@ -7,4 +8,5 @@ def get_francis_path():
 
 def initialize_mpl_style():
     base = get_francis_path()
+    print("Setting matplotlib style")
     return base + 'francis_plots.mplstyle'
