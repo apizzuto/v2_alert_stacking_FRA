@@ -15,13 +15,16 @@ from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
 mpl.style.use('/home/apizzuto/Nova/scripts/novae_plots.mplstyle')
 
-#skymap_files = glob('/data/ana/realtime/alert_catalog_v2/2yr_prelim/fits_files/Run*.fits.gz')
-skymap_files = glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run1*.fits.gz')
+skymap_files = glob(
+    '/data/ana/realtime/alert_catalog_v2/fits_files/Run1*.fits.gz'
+    )
 energy_density = {'transient': {'HB2006SFR': 4.8038e51, 
-                        'MD2014SFR': 7.099e51, #6.196e51, commented bc switch to cascades
+                        'MD2014SFR': 7.099e51, 
+                        #6.196e51, commented bc switch to cascades
                         'NoEvolution': 1.8364e52},
                 'steady': {'HB2006SFR': 7.6735e43, 
-                        'MD2014SFR': 1.134e44, #9.897e+43, commented bc switch to cascades
+                        'MD2014SFR': 1.134e44, 
+                        #9.897e+43, commented bc switch to cascades
                         'NoEvolution': 2.93335e44}}
 
 energy_density_uncertainty = {'transient': {
@@ -84,6 +87,9 @@ class UniversePlotter():
         self.med_p = None
         self.get_labels()
         self.sigs = None
+        self.save_figs = kwargs.pop('save', False)
+        if self.save_figs:
+            self.savepath = kwargs.pop('savepath', './')
 
     def two_dim_sensitivity_plot_ts(self, compare=False, log_ts=False, in_ts=True,
                         ts_vs_p=False, discovery=False):
@@ -156,14 +162,24 @@ class UniversePlotter():
             cs_ts = ax.contour(X, Y, sens_disc, colors=['k'], 
                             levels=[0.0], linewidths=2., linestyles=linestyle)
         xs = np.logspace(-11., -6., 1000)
-        ys_max = self.no_evol_energy_density / xs / self.seconds_per_year if self.transient else self.no_evol_energy_density / xs
-        ys_min = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
-        plt.fill_between(np.log10(xs), np.log10(ys_min), np.log10(ys_max), 
-                color = sns.xkcd_rgb['dodger blue'], alpha = 0.3, lw=0.0, zorder=10)
+
+        ys_median = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
+        plt.plot(np.log10(xs), np.log10(ys_median), color = sns.xkcd_rgb['dodger blue'], lw=1.5)
+        for sig in ['one_sigma', 'two_sigma']:
+            upper_factor = self.energy_density_uncertainty['plus_'+sig] / self.energy_density
+            lower_factor = self.energy_density_uncertainty['minus_'+sig] / self.energy_density
+            alpha = 0.45 if sig is 'two_sigma' else 0.75
+            plt.fill_between(np.log10(xs), np.log10(ys_median * lower_factor), np.log10(ys_median * upper_factor), 
+                    color = sns.xkcd_rgb['dodger blue'], alpha = alpha, lw=0.0, zorder=10)
+        plt.text(-9, 53.6, 'Diffuse', color = sns.xkcd_rgb['dodger blue'], rotation=-28, fontsize=18)
+        # ys_max = self.no_evol_energy_density / xs / self.seconds_per_year if self.transient else self.no_evol_energy_density / xs
+        # ys_min = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
+        # plt.fill_between(np.log10(xs), np.log10(ys_min), np.log10(ys_max), 
+        #         color = sns.xkcd_rgb['dodger blue'], alpha = 0.3, lw=0.0, zorder=10)
         if compare:
             comp_rho, comp_en, comp_str = self.compare_other_analyses()
             plt.plot(comp_rho, comp_en, color = 'gray', lw=2., zorder=5)
-        plt.text(-9, 54.1, 'Diffuse', color = sns.xkcd_rgb['dodger blue'], rotation=-28, fontsize=18)
+        #plt.text(-9, 54.1, 'Diffuse', color = sns.xkcd_rgb['dodger blue'], rotation=-28, fontsize=18)
         #plt.text(-10, 51.7, 'Sensitivity', color = 'k', rotation=-28, fontsize=18)
         plt.grid(lw=0.0)
         #plt.ylim(50, 55.5)
@@ -183,6 +199,9 @@ class UniversePlotter():
         plt.xlabel(self.density_label, fontsize = 22)
         title = self.lumi_str + ', ' + self.evol_str
         plt.title(title)
+        if self.save_figs:
+            print("Implement saving?")
+            #plt.save()
         #plt.show()
 
     def rotated_sensitivity_plot_ts(self, log_ts=False, in_ts=True, ts_vs_p=False, compare=False,
@@ -258,16 +277,25 @@ class UniversePlotter():
             cs_ts = ax.contour(X, Y, sens_disc, colors=['k'], 
                             levels=[0.0], linewidths=2., linestyles=linestyle)
         xs = np.logspace(-11., -6., 1000)
-        ys_max = self.no_evol_energy_density / xs / self.seconds_per_year if self.transient else self.no_evol_energy_density / xs
-        ys_min = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
-        plt.fill_between(np.log10(xs), np.log10(ys_min*xs), np.log10(ys_max*xs), 
-                color = sns.xkcd_rgb['dodger blue'], alpha = 0.3, lw=0.0, zorder=10)
+        ys_median = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
+        
+        plt.plot(np.log10(xs), np.log10(ys_median*xs), color = sns.xkcd_rgb['dodger blue'], lw=1.5)
+        for sig in ['one_sigma', 'two_sigma']:
+            upper_factor = self.energy_density_uncertainty['plus_'+sig] / self.energy_density
+            lower_factor = self.energy_density_uncertainty['minus_'+sig] / self.energy_density
+            alpha = 0.45 if sig is 'two_sigma' else 0.75
+            plt.fill_between(np.log10(xs), np.log10(ys_median * lower_factor * xs), np.log10(ys_median * upper_factor * xs), 
+                    color = sns.xkcd_rgb['dodger blue'], alpha = alpha, lw=0.0, zorder=10)
+        plt.text(-10, np.log10(np.max(ys_median*xs*upper_factor)*1.1), 'Diffuse', 
+                        color = sns.xkcd_rgb['dodger blue'], rotation=0, fontsize=18)
+        # ys_max = self.no_evol_energy_density / xs / self.seconds_per_year if self.transient else self.no_evol_energy_density / xs
+        # ys_min = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
+        # plt.fill_between(np.log10(xs), np.log10(ys_min*xs), np.log10(ys_max*xs), 
+        #         color = sns.xkcd_rgb['dodger blue'], alpha = 0.3, lw=0.0, zorder=10)
         if compare:
             comp_rho, comp_en, comp_str = self.compare_other_analyses()
             plt.plot(comp_rho, comp_rho+comp_en, color = 'gray', lw=2.) #damn look at that log property
-        plt.text(-10, np.log10(np.max(ys_max*xs)*1.1), 'Diffuse', color = sns.xkcd_rgb['dodger blue'], rotation=0, fontsize=18)
-        #plt.text(-10, np.log10(np.min(ys_min*xs)*0.2), 'Sensitivity', color = 'k', rotation=0, fontsize=18)
-        plt.grid(lw=0.0)
+        #plt.grid(lw=0.0)
         plt.xlim(-11., -6.)
         plt.ylim(np.log10(np.min(ys_min*xs)*3e-2), np.log10(np.max(ys_max*xs)*2))
         plt.ylabel(self.scaled_lumi_label, fontsize = 22)
@@ -551,7 +579,6 @@ class UniversePlotter():
         plt.scatter(np.log10(dens), np.log10(lumi / self.time_window_per_year), 
                         marker='*', color = 'k', s=100)
    
-
     def inject_and_fit_TS_plot(self, unblinded_val, in_ts=True, show=True, 
                     title=True, upper_limit=False):
         r'''Assume a certain unblinded TS value 

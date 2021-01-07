@@ -1,4 +1,4 @@
-# Stacking v2 alert Fast Response Analysis
+# Stacking v2 alerts using the Fast Response Analysis
 
 This repository is for the application of the fast response analysis to our v2 alert events. The analysis is stacking the results from all of the alert events from the archival v2 alert catalog, beginning in 2011.
 
