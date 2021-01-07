@@ -90,6 +90,7 @@ class UniversePlotter():
         self.save_figs = kwargs.pop('save', False)
         if self.save_figs:
             self.savepath = kwargs.pop('savepath', './')
+        self.verbose = kwargs.pop('verbose', False)
 
     def two_dim_sensitivity_plot_ts(self, compare=False, log_ts=False, in_ts=True,
                         ts_vs_p=False, discovery=False):
@@ -164,14 +165,14 @@ class UniversePlotter():
         xs = np.logspace(-11., -6., 1000)
 
         ys_median = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
-        plt.plot(np.log10(xs), np.log10(ys_median), color = sns.xkcd_rgb['dodger blue'], lw=1.5)
+        plt.plot(np.log10(xs), np.log10(ys_median), color = 'm', lw=1.5)
         for sig in ['one_sigma', 'two_sigma']:
             upper_factor = self.energy_density_uncertainty['plus_'+sig] / self.energy_density
             lower_factor = self.energy_density_uncertainty['minus_'+sig] / self.energy_density
             alpha = 0.45 if sig is 'two_sigma' else 0.75
             plt.fill_between(np.log10(xs), np.log10(ys_median * lower_factor), np.log10(ys_median * upper_factor), 
-                    color = sns.xkcd_rgb['dodger blue'], alpha = alpha, lw=0.0, zorder=10)
-        plt.text(-9, 53.6, 'Diffuse', color = sns.xkcd_rgb['dodger blue'], rotation=-28, fontsize=18)
+                    color = 'm', alpha = alpha, lw=0.0, zorder=10)
+        plt.text(-9, 53.6, 'Diffuse', color = 'm', rotation=-28, fontsize=18)
         if compare:
             comp_rho, comp_en, comp_str = self.compare_other_analyses()
             plt.plot(comp_rho, comp_en, color = 'gray', lw=2., zorder=5)
@@ -202,12 +203,16 @@ class UniversePlotter():
         plt.title(title)
         if self.save_figs:
             for ftype in ['.png', '.pdf']:
-                plt.savefig(
-                    self.savepath + 'two_dim_sens' + self.steady_str
+                file_path = self.savepath + 'two_dim_sens' + self.steady_str
                     + '_' + self.evol 
                     + '_{}_years'.format(int(self.data_years))
-                    + '_' + self.lumi + ftype, 
-                    bbox_inches='tight')
+                    + '_' + self.lumi
+                plt.savefig(
+                    file_path + ftype, 
+                    bbox_inches='tight'
+                    )
+            if self.verbose:
+                print("\t - saved plot to {}".format(file_path))
 
     def rotated_sensitivity_plot_ts(self, log_ts=False, in_ts=True, ts_vs_p=False, compare=False,
                                     discovery=False):
@@ -284,15 +289,15 @@ class UniversePlotter():
         xs = np.logspace(-11., -6., 1000)
         ys_median = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
         
-        plt.plot(np.log10(xs), np.log10(ys_median*xs), color = sns.xkcd_rgb['dodger blue'], lw=1.5)
+        plt.plot(np.log10(xs), np.log10(ys_median*xs), color = 'm', lw=1.5)
         for sig in ['one_sigma', 'two_sigma']:
             upper_factor = self.energy_density_uncertainty['plus_'+sig] / self.energy_density
             lower_factor = self.energy_density_uncertainty['minus_'+sig] / self.energy_density
             alpha = 0.45 if sig is 'two_sigma' else 0.75
             plt.fill_between(np.log10(xs), np.log10(ys_median * lower_factor * xs), np.log10(ys_median * upper_factor * xs), 
-                    color = sns.xkcd_rgb['dodger blue'], alpha = alpha, lw=0.0, zorder=10)
+                    color = 'm', alpha = alpha, lw=0.0, zorder=10)
         plt.text(-10, np.log10(np.max(ys_median*xs*upper_factor)*1.1), 'Diffuse', 
-                        color = sns.xkcd_rgb['dodger blue'], rotation=0, fontsize=18)
+                        color = 'm', rotation=0, fontsize=18)
         if compare:
             comp_rho, comp_en, comp_str = self.compare_other_analyses()
             plt.plot(comp_rho, comp_rho+comp_en, color = 'gray', lw=2.) #damn look at that log property
@@ -316,12 +321,16 @@ class UniversePlotter():
         plt.title(title)
         if self.save_figs:
             for ftype in ['.png', '.pdf']:
-                plt.savefig(
-                    self.savepath + 'rotated_two_dim_sens' + self.steady_str
-                    + '_' + self.evol 
+                file_path = self.savepath + 'rotated_two_dim_sens' 
+                    + self.steady_str + '_' + self.evol 
                     + '_{}_years'.format(int(self.data_years))
-                    + '_' + self.lumi + ftype, 
-                    bbox_inches='tight')
+                    + '_' + self.lumi
+                plt.savefig(
+                    file_path + ftype, 
+                    bbox_inches='tight'
+                )
+            if self.verbose:
+                print("\t - saved plot to {}".format(file_path))
     
     def get_labels(self):
         r'''Run during initialization to get the correct units 
@@ -436,12 +445,16 @@ class UniversePlotter():
             plt.yscale('log')
         if self.save_figs:
             for ftype in ['.png', '.pdf']:
-                plt.savefig(
-                    self.savepath + 'one_dim_ts_dist_' + self.steady_str
-                    + '_' + self.evol 
+                file_path = self.savepath + 'one_dim_ts_dist_' 
+                    + self.steady_str + '_' + self.evol 
                     + '_{}_years'.format(int(self.data_years))
-                    + '_' + self.lumi + ftype, 
-                    bbox_inches='tight')
+                    + '_' + self.lumi
+                plt.savefig(
+                    file_path + ftype, 
+                    bbox_inches='tight'
+                    )
+            if self.verbose:
+                print("\t - saved plot to {}".format(file_path))
 
     def ts_and_ps_plot(self, only_gold=False, log_ts=True):
         r'''Make TS distributions for density, luminosity 
@@ -631,12 +644,16 @@ class UniversePlotter():
             plt.title(title_str)
         if self.save_figs:
             for ftype in ['.png', '.pdf']:
-                plt.savefig(
-                    self.savepath + 'inject_and_fit' + self.steady_str
+                file_path = self.savepath + 'inject_and_fit' + self.steady_str
                     + '_' + self.evol 
                     + '_{}_years'.format(int(self.data_years))
-                    + '_' + self.lumi + ftype, 
-                    bbox_inches='tight')
+                    + '_' + self.lumi
+                plt.savefig(
+                    file_path + ftype, 
+                    bbox_inches='tight'
+                    )
+            if self.verbose:
+                print("\t - saved plot to {}".format(file_path))
         if show:
             plt.show()
 
@@ -833,12 +850,16 @@ class UniversePlotter():
         rot_str = '' if not rotated else 'rotated_'
         if self.save_figs:
             for ftype in ['.png', '.pdf']:
-                plt.savefig(
-                    self.savepath + self.rot_str + 'brazil_bands' 
+                file_path = self.savepath + self.rot_str + 'brazil_bands' 
                     + self.steady_str + '_' + self.evol 
                     + '_{}_years'.format(int(self.data_years))
-                    + '_' + self.lumi + ftype, 
-                    bbox_inches='tight')
+                    + '_' + self.lumi
+                plt.savefig(
+                    file_path + ftype, 
+                    bbox_inches='tight'
+                    )
+            if self.verbose:
+                print("\t - saved plot to {}".format(file_path))
 
     def upper_limit_plot(self):
         pass
