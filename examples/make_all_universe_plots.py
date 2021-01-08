@@ -9,6 +9,13 @@ utils.initialize_mpl_style()
 import matplotlib as mpl
 
 def make_analysis_plots(uni):
+    """
+    Call all relevant class methods to create
+    plots needed for a fixed time window analysis
+
+    :type uni: UniversePlotter instance
+    :param uni: analysis for which we are making plots
+    """
     print("\tMaking plots now . . . ")
     try:
         compare = True if uni.delta_t == 1e3 else False

@@ -875,7 +875,10 @@ class UniversePlotter():
                 time_window_str = '$\pm 500$ s, '
             else:
                 time_window_str = '$\pm 1$ day, '
-            plt.title(r'$\Delta T = $' + time_window_str + ', 8.6 yrs alerts')
+            plt.title(
+                r'$\Delta T = $' + time_window_str \
+                + '{} yrs alerts'.format(self.data_years)
+                )
         else:
             plt.title(
                 r'Time integrated' 
@@ -885,9 +888,8 @@ class UniversePlotter():
         if self.save_figs:
             for ftype in ['.png', '.pdf']:
                 file_path = self.savepath + 'binom_p_distribution' \
-                    + self.steady_str + '_' + self.evol \
-                    + '_{}_years'.format(int(self.data_years)) \
-                    + '_' + self.lumi
+                    + self.steady_str \
+                    + '_{}_years'.format(int(self.data_years))
                 plt.savefig(
                     file_path + ftype, 
                     bbox_inches='tight'
