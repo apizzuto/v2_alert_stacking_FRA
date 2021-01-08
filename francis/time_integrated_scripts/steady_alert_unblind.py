@@ -36,6 +36,7 @@ def unblind_steady_map(
     multillh, spatial_prior = config(
         index, gamma = 2.0, seed = seed, scramble = False, nside=nside, 
         ncpu = 1, injector = False, verbose=verbose, smear=smear,
+        remove = True
         )
 
     t1 = time.time()
@@ -84,9 +85,8 @@ def unblind_steady_map(
             dt1, (dt-dt1)
             ))
 
-    print(allspots)
-    # with open(outfile, 'w') as f:
-    #     pickle.dump(allspots, f, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(outfile, 'w') as f:
+        pickle.dump(allspots, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == "__main__":

@@ -107,7 +107,17 @@ def config(alert_ind, seed = 1, scramble = True, e_range=(0,np.inf), g_range=[1.
         sample = season[0]
         name = season[1]
 
+        dataset = Datasets[sample]
+
         exp, mc, livetime = Datasets[sample].season(name, floor=np.radians(0.2))
+
+        if remove:
+            run_msk = exp['run'] == run_id
+            ev_msk = exp['event'] == ev_id
+            if np.count_nonzero(run_msk * ev_msk) > 0:
+                mjd_keys = exp['time'][run_msk * ev_msk]
+                exp = dataset.remove_ev(exp, mjd_keys=mjd_keys[0])
+
         sinDec_bins = Datasets[sample].sinDec_bins(name)
         energy_bins = Datasets[sample].energy_bins(name)
 
@@ -133,7 +143,6 @@ def config(alert_ind, seed = 1, scramble = True, e_range=(0,np.inf), g_range=[1.
 
         # END for (season)
 
-    ######################### REMOVE EVENT
 
     if injector is False:
         return multillh, spatial_prior
