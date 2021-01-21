@@ -110,7 +110,11 @@ class Universe():
 
     def sample_skymap(self, decs):
         r'''Only use real alert event skymap locations'''
-        map_decs = np.load('/data/user/apizzuto/fast_response_skylab/alert_event_followup/effective_areas_alerts/decs_by_ind.npy')[1][:]
+        if sys.version[0] == '3':
+            map_decs = np.load('/data/user/apizzuto/fast_response_skylab/alert_event_followup/effective_areas_alerts/decs_by_ind.npy',
+                allow_pickle=True, encoding='latin1')[1][:]
+        else:
+            map_decs = np.load('/data/user/apizzuto/fast_response_skylab/alert_event_followup/effective_areas_alerts/decs_by_ind.npy')[1][:]
         sample_decs, idxs = [], []
         if isinstance(decs, float):
             decs = [decs]
@@ -410,7 +414,11 @@ def load_alert_effA(stream = 'HESE', level='bronze'):
 
 def load_HESE_effA(level = 'bronze'):
     r'''Load starting events effective areas'''
-    hese_tmp = np.load(eff_area_path + 'realtimeHESEv2_effA.npy').item()
+    if sys.version[0] == '3':
+        hese_tmp = np.load(eff_area_path + 'realtimeHESEv2_effA.npy',
+            allow_pickle=True, encoding='latin1').item()
+    else:
+        hese_tmp = np.load(eff_area_path + 'realtimeHESEv2_effA.npy').item()
     hese_ret = {}
     for key, val in hese_tmp.items():
         if level in key:
@@ -422,7 +430,11 @@ def load_HESE_effA(level = 'bronze'):
 def load_EHE_effA(level = 'bronze'):
     r'''Load through-going events effective areas (this is actually
     GFU and EHE)'''
-    ehe_tmp = np.load(eff_area_path + 'through_going_v2_alerts.npy').item()
+    if sys.version[0] == '3':
+        ehe_tmp = np.load(eff_area_path + 'through_going_v2_alerts.npy',
+            allow_pickle=True, encoding='latin1').item()
+    else:
+        ehe_tmp = np.load(eff_area_path + 'through_going_v2_alerts.npy').item()
     ehe_ret = {}
     for key, val in ehe_tmp.items():
         if level in key:
