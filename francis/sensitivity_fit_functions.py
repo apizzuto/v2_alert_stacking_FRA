@@ -113,26 +113,13 @@ def sensitivity_curve(index, delta_t, threshold = 0.5, in_ns = True, with_err = 
                     p0 = None, fontsize = 16, conf_lev = 0.9, smear=True, legend=True, text=True):
     signal_fluxes, passing, errs = pass_vs_inj(index, delta_t, threshold=threshold, in_ns=in_ns, with_err=with_err, trim=trim, smear=smear)
     fits, plist = [], []
-    try:
-        fits.append(sensitivity_fit(signal_fluxes, passing, errs, chi2cdf, p0=p0, conf_lev=conf_lev))
-        plist.append(fits[-1]['pval'])
-    except:
-        pass
-    try:
-        fits.append(sensitivity_fit(signal_fluxes, passing, errs, erfunc, p0=p0, conf_lev=conf_lev))
-        plist.append(fits[-1]['pval'])
-    except:
-        pass
-    try:
-        fits.append(sensitivity_fit(signal_fluxes, passing, errs, incomplete_gamma, p0=p0, conf_lev=conf_lev))
-        plist.append(fits[-1]['pval'])
-    except:
-        pass
-    try:
-        fits.append(sensitivity_fit(signal_fluxes, passing, errs, fsigmoid, p0=p0, conf_lev=conf_lev))
-        plist.append(fits[-1]['pval'])
-    except:
-        pass
+    for ffunc in [chi2cdf, erfunc, incomplete_gamma, fsigmoid]:
+            try:
+                fits.append(sensitivity_fit(signal_fluxes, 
+                    passing, errs, ffunc, p0=p0, conf_lev=conf_lev))
+                plist.append(fits[-1]['pval'])
+            except:
+                pass
         #print("at least one fit failed")
     #Find best fit of the three, make it look different in plot
     plist = np.array(plist)
@@ -165,26 +152,13 @@ def calc_sensitivity(index, delta_t, threshold = 0.5, in_ns = True, with_err = T
                     conf_lev = 0.9, p0=None, smear=True):
     signal_fluxes, passing, errs = pass_vs_inj(index, delta_t, threshold=threshold, in_ns=in_ns, with_err=with_err, trim=trim, smear=smear)
     fits, plist = [], []
-    try:
-        fits.append(sensitivity_fit(signal_fluxes, passing, errs, chi2cdf, p0=p0, conf_lev=conf_lev))
-        plist.append(fits[-1]['pval'])
-    except:
-        pass
-    try:
-        fits.append(sensitivity_fit(signal_fluxes, passing, errs, erfunc, p0=p0, conf_lev=conf_lev))
-        plist.append(fits[-1]['pval'])
-    except:
-        pass
-    try:
-        fits.append(sensitivity_fit(signal_fluxes, passing, errs, incomplete_gamma, p0=p0, conf_lev=conf_lev))
-        plist.append(fits[-1]['pval'])
-    except:
-        pass
-    try:
-        fits.append(sensitivity_fit(signal_fluxes, passing, errs, fsigmoid, p0=p0, conf_lev=conf_lev))
-        plist.append(fits[-1]['pval'])
-    except:
-        pass
+    for ffunc in [chi2cdf, erfunc, incomplete_gamma, fsigmoid]:
+            try:
+                fits.append(sensitivity_fit(signal_fluxes, 
+                    passing, errs, ffunc, p0=p0, conf_lev=conf_lev))
+                plist.append(fits[-1]['pval'])
+            except:
+                pass
     #Find best fit of the three, make it look different in plot
     plist = np.array(plist)
     if len(plist) > 0:
@@ -200,17 +174,19 @@ def sensitivity_fit(signal_fluxes, passing, errs, fit_func, p0 = None, conf_lev 
         name = name.replace("_", " ")
     except:
         name = 'fit'
-    popt, pcov = curve_fit(fit_func, signal_fluxes, passing, sigma = errs, p0 = p0, maxfev=10000)
+    signal_scale_fac = np.max(signal_fluxes)
+    signal_fls = signal_fluxes / signal_scale_fac
+    popt, pcov = curve_fit(fit_func, signal_fls, passing, sigma = errs, p0 = p0, maxfev=4000)
     #print popt
-    fit_points = fit_func(signal_fluxes, *popt)
+    fit_points = fit_func(signal_fls, *popt)
     chi2 = np.sum((fit_points - passing)**2. / errs**2.)
     dof = len(fit_points) - len(popt)
-    xfit = np.linspace(np.min(signal_fluxes) - 0.5, np.max(signal_fluxes), 100)
+    xfit = np.linspace(np.min(signal_fls) - 0.5/signal_scale_fac, np.max(signal_fls), 100)
     yfit = fit_func(xfit, *popt)
     pval = sp.stats.chi2.sf(chi2, dof)
-    sens = xfit[find_nearest_idx(yfit, conf_lev)]
+    sens = xfit[find_nearest_idx(yfit, conf_lev)]*signal_scale_fac
     return {'popt': popt, 'pcov': pcov, 'chi2': chi2, 
-            'dof': dof, 'xfit': xfit, 'yfit': yfit, 
+            'dof': dof, 'xfit': xfit*signal_scale_fac, 'yfit': yfit, 
             'name': name, 'pval':pval, 'ls':'--', 'sens': sens}
 
 def pvals_for_signal(index, delta_t, ns = 1, sigma_units = False, smear=True):
