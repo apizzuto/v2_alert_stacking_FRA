@@ -14,10 +14,13 @@ def run_signal_trials(
     poisson=~fit
     smear_str = 'smeared/' if smear else 'norm_prob/'
     outdir = 'fits' if fit else 'sensitivity'
+    alert_df = pd.DataFrame.from_csv('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/icecube_misc/alert_dataframe.csv')
+    event_id = alert_df.iloc[index]['Event ID']
+    run_id = alert_df.iloc[index]['Run ID']
     outfile = '/data/user/apizzuto/fast_response_skylab/' \
         + 'alert_event_followup/analysis_trials/' \
-        + '{}/{}index_{}_steady_seed_{}_gamma_{}.pkl'.format(
-            outdir, smear_str, index, seed, gamma
+        + '{}/{}index_{}_run_{}_event_{}_steady_seed_{}_gamma_{}.pkl'.format(
+            outdir, smear_str, index, run_id, event_id, seed, gamma
             )
 
     t0 = time.time()
