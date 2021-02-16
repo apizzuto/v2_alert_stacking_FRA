@@ -10,6 +10,7 @@ information about each trial to outfile
 '''
 import time, pickle, argparse
 import numpy as np 
+import pandas as pd
 
 from francis.time_integrated_scripts.config_steady import config
 
@@ -20,15 +21,18 @@ def unblind_steady_map(
     """DOCSTRING"""
 
     smear_str = 'smeared/' if smear else 'norm_prob/'
+    alert_df = pd.DataFrame.from_csv('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/icecube_misc/alert_dataframe.csv')
+    event_id = alert_df.iloc[index]['Event ID']
+    run_id = alert_df.iloc[index]['Run ID']
     if not local_skymap:
         outfile = '/data/user/apizzuto/fast_response_skylab/' \
             + 'alert_event_followup/analysis_trials/results/' \
-            + '{}index_{}_steady_seed_{}.pkl'.format(smear_str, index, seed)
+            + '{}index_{}_run_{}_event_{}_steady_seed_{}.pkl'.format(smear_str, index, run_id, event_id, seed)
     else:
         outfile = '/data/user/apizzuto/fast_response_skylab/' \
         + 'alert_event_followup/analysis_trials/results/' \
-        + '{}index_{}_steady_ts_map_seed_{}.pkl'.format(
-            smear_str, index, seed
+        + '{}index_{}_run_{}_event_{}_steady_ts_map_seed_{}.pkl'.format(
+            smear_str, index, run_id, event_id, seed
             )
 
     t0 = time.time()

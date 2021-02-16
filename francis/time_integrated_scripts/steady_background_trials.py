@@ -10,6 +10,7 @@ information about each trial to outfile
 '''
 import time, pickle, argparse
 import numpy as np
+import pandas as pd
 
 from francis.time_integrated_scripts.config_steady import config
 
