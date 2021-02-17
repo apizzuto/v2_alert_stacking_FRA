@@ -8,7 +8,7 @@ import pandas as pd
 from astropy.time import Time
 import healpy as hp
 
-alert_fs = glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run*.fits.gz')
+alert_fs = sorted(glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run*.fits.gz'))
 df_dict = {'Event ID': [], 'Run ID': [], 'Dec': [], 'RA': [], 'Signalness': [],
           'MJD': [], 'Stream': [], 'Cut': [], 'Dec err': [], 'RA err': []}
 
