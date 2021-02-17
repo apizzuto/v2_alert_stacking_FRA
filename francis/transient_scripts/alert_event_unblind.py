@@ -22,7 +22,7 @@ args = parser.parse_args()
 
 output_paths = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/results/'
 
-skymap_files = glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run1*.fits.gz')
+skymap_files = sorted(glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run1*.fits.gz'))
 skymap_fits, skymap_header = hp.read_map(skymap_files[args.index], h=True, verbose=False)
 
 skymap_header = {name: val for name, val in skymap_header}

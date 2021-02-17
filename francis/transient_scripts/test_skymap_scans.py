@@ -6,7 +6,7 @@ from astropy.time import Time
 TSs = []; TSDs = []
 ps = []
 
-skymap_files = glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run*.fits.gz')
+skymap_files = sorted(glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run*.fits.gz'))
 
 for index in range(len(skymap_files)):
     print("Index: {}".format(index))
@@ -43,5 +43,5 @@ for index in range(len(skymap_files)):
 res = {'tsd': TSDs, 'TS': TSs, 'p': ps}
 
 import pickle
-with open('/data/user/apizzuto/fast_response_skylab/dump/test_scans_subset_smear.pkl', 'w') as fi:
+with open('/data/user/apizzuto/fast_response_skylab/dump/test_scans_subset_smear.pkl', 'wb') as fi:
     pickle.dump(res, fi)

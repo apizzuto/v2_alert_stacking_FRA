@@ -28,7 +28,7 @@ args = parser.parse_args()
 #files = glob(skymaps_path + '*.fits')
 output_paths = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/bg/'
 
-skymap_files = glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run1*.fits.gz')
+skymap_files = sorted(glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run1*.fits.gz'))
 
 skymap_fits, skymap_header = hp.read_map(skymap_files[args.index], h=True, verbose=False)
 skymap_header = {name: val for name, val in skymap_header}
@@ -89,5 +89,5 @@ results = {'ts_prior': tsList_prior, 'ts': tsList, 'ns_prior': nsList_prior,
             'ns': nsList, 'ra': ra, 'dec': dec}
 
 smear_str = 'smeared/' if args.smear else 'norm_prob/'
-with open(output_paths + smear_str + 'index_{}_run_{}_event_{}_time_{}.pkl'.format(args.index, run_id, event_id, args.deltaT), 'w') as fi:
+with open(output_paths + smear_str + 'index_{}_run_{}_event_{}_time_{}.pkl'.format(args.index, run_id, event_id, args.deltaT), 'wb') as fi:
     pickle.dump(results, fi, protocol=pickle.HIGHEST_PROTOCOL)
