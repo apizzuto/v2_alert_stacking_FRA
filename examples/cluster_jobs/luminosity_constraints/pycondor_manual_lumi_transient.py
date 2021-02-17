@@ -8,7 +8,7 @@ output = '/scratch/apizzuto/fast_response/condor/output'
 log = '/scratch/apizzuto/fast_response/condor/log'
 submit = '/scratch/apizzuto/fast_response/condor/submit'
 
-low_mem_job = pycondor.Job('low_mem_calc_ts_dists','/data/user/apizzuto/fast_response_skylab/fast-response/trunk/alert_event_followup/first_full_ts_sampling.py',
+low_mem_job = pycondor.Job('low_mem_calc_ts_dists','/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/universe/transient_full_2d_ts_sampling.py',
 			error=error,
 			output=output,
 			log=log,
@@ -21,7 +21,7 @@ low_mem_job = pycondor.Job('low_mem_calc_ts_dists','/data/user/apizzuto/fast_res
 			extra_lines= ['should_transfer_files = YES', 'when_to_transfer_output = ON_EXIT', 'Requirements =  (Machine != "node128.icecube.wisc.edu")']
 			)
 
-high_mem_job = pycondor.Job('high_mem_calc_ts_dists','/data/user/apizzuto/fast_response_skylab/fast-response/trunk/alert_event_followup/first_full_ts_sampling.py',
+high_mem_job = pycondor.Job('high_mem_calc_ts_dists','/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/universe/transient_full_2d_ts_sampling.py',
 			error=error,
 			output=output,
 			log=log,
