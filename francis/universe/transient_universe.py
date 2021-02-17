@@ -125,11 +125,11 @@ class Universe():
                 # Some alerts happened during downtime (79, 228), some 
                 # are too large of maps (60)
                 if self.timescale == 1000.:
-                    problem_inds = [60, 79, 228]
+                    problem_inds = [198, 95, 92]
                 elif self.timescale == 172800.:
-                    problem_inds = [60]
+                    problem_inds = [198]
                 else:
-                    problem_inds = [13, 32, 60, 83, 143, 147]
+                    problem_inds = [157, 73, 198, 142, 76, 147]
                 while idx in problem_inds:
                     idx = find_nearest_ind(map_decs, dec)
                 sample_dec = map_decs[idx]
@@ -139,11 +139,11 @@ class Universe():
                 # Some alerts happened during downtime (79, 228), some 
                 # are too large of maps (60)
                 if self.timescale == 1000.:
-                    problem_inds = [60, 79, 228]
+                    problem_inds = [198, 95, 92]
                 elif self.timescale == 172800:
-                    problem_inds = [60]
+                    problem_inds = [198]
                 else:
-                    problem_inds = [13, 32, 60, 83, 143, 147]
+                    problem_inds = [157, 73, 198, 142, 76, 147]
                 while idx in problem_inds:
                     idx = self.rng.choice(nearby_inds)
                 sample_dec = map_decs[idx]

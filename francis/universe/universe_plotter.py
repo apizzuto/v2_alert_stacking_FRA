@@ -15,9 +15,9 @@ from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
 mpl.style.use('/home/apizzuto/Nova/scripts/novae_plots.mplstyle')
 
-skymap_files = glob(
+skymap_files = sorted(glob(
     '/data/ana/realtime/alert_catalog_v2/fits_files/Run1*.fits.gz'
-    )
+    ))
 energy_density = {'transient': {'HB2006SFR': 4.8038e51, 
                         'MD2014SFR': 7.099e51, 
                         #6.196e51, commented bc switch to cascades
@@ -501,11 +501,11 @@ class UniversePlotter():
         TSs = []
         for ind in range(len(skymap_files)):
             if self.transient and self.delta_t == 1000.:
-                problem_inds = [60, 79, 228]
+                problem_inds = [198, 95, 92]
             elif self.transient:
-                problem_inds = [60]
+                problem_inds = [198]
             else:
-                problem_inds = [13, 32, 60, 83, 143, 147]
+                problem_inds = [157, 73, 198, 142, 76, 147]
             if ind in problem_inds:
                 continue
             else:
@@ -544,11 +544,11 @@ class UniversePlotter():
         pvals = []
         for ind in range(len(skymap_files)):
             if self.transient and self.delta_t == 1000.:
-                problem_inds = [60, 79, 228]
+                problem_inds = [198, 95, 92]
             elif self.transient:
-                problem_inds = [60]
+                problem_inds = [198]
             else:
-                problem_inds = [13, 32, 60, 83, 143, 147]
+                problem_inds = [157, 73, 198, 142, 76, 147]
             if ind in problem_inds:
                 continue
             else:
