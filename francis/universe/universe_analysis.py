@@ -168,7 +168,10 @@ class UniverseAnalysis():
     def background_alert_trials(self, ind, calc_p=True):
         if self.transient:
             trials_file = glob(bg_trials + self.smear_str + 'index_{}_*_time_{:.1f}.pkl'.format(ind, self.deltaT))[0]
-            trials = np.load(trials_file)
+            if sys.version[0] == '3':
+                trials = np.load(trials_file, allow_pickle=True, encoding='latin1')
+            else:
+                trials = np.load(trials_file)
             ts = np.random.choice(trials['ts_prior'])
             if calc_p:
                 if ts == 0:
@@ -210,11 +213,17 @@ class UniverseAnalysis():
         else:
             if self.transient:
                 trials_file = glob(signal_trials + self.smear_str + 'index_{}_*_time_{:.1f}.pkl'.format(ind, self.deltaT))[0]
-                trials = np.load(trials_file)
+                if sys.version[0] == '3':
+                    trials = np.load(trials_file, allow_pickle=True, encoding='latin1')
+                else:
+                    trials = np.load(trials_file)
             else:
                 fs = glob(signal_trials + self.smear_str + 'index_{}_steady_seed_*.pkl'.format(ind))
                 t_file = np.random.choice(fs)
-                trials = np.load(t_file)
+                if sys.version[0] == '3':
+                    trials = np.load(t_file, allow_pickle=True, encoding='latin1')
+                else:
+                    trials = np.load(t_file)
                 #trials = np.load(signal_trials + 'index_{}_steady.pkl'.format(ind))
             ns_key = 'true_ns' if self.transient else 'inj_nsignal'
             if N <= 10:
@@ -246,13 +255,17 @@ class UniverseAnalysis():
             return 1.
         if self.transient:
             trials_file = glob(bg_trials + self.smear_str + 'index_{}_*_time_{:.1f}.pkl'.format(ind, self.deltaT))[0]
-            trials = np.load(trials_file)
+            if sys.version[0] == '3':
+                trials = np.load(trials_file, allow_pickle=True, encoding='latin1')
+            else:
+                trials = np.load(trials_file)
             pval = float(np.count_nonzero(np.array(trials['ts_prior']) >= TS)) / np.array(trials['ts_prior']).size
             if pval == 0.:
                 pval = 1./np.array(trials['ts_prior']).size
         else:
             fs = glob(bg_trials + self.smear_str + 'index_{}_steady_seed_*.pkl'.format(ind))
-            tmp_ds = [np.load(f) for f in fs]
+            kwargs = {} if not sys.version[0] == '3' else {'encoding': 'latin1', 'allow_pickle': True}
+            tmp_ds = [np.load(f, **kwargs) for f in fs]
             trials = {k:[] for k in tmp_ds[0].keys()}
             for k in trials.keys():
                 for d in tmp_ds:

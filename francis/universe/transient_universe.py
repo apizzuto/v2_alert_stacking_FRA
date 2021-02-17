@@ -177,8 +177,11 @@ class Universe():
         if self.sig_alerts is None:
             self.find_signal_alerts()
         with open('/data/user/apizzuto/fast_response_skylab/alert_event_followup/' + \
-                'effective_areas_alerts/gfu_online_effective_area_spline.npy', 'r') as f:
-            gfu_eff_spline = pickle.load(f)
+                'effective_areas_alerts/gfu_online_effective_area_spline.npy', 'rb') as f:
+            if sys.version[0] == '3':
+                gfu_eff_spline = pickle.load(f, encoding='latin1')
+            else:
+                gfu_eff_spline = pickle.load(f)
         for stream in self.sig_alerts.keys():
             for jjj, (src_dec, src_flux) in enumerate(zip(self.sources['dec'], self.sources['flux'])):
                 if self.sig_alerts[stream][jjj][0] == 0:
@@ -253,7 +256,7 @@ class SteadyUniverse(Universe):
         if self.sig_alerts is None:
             self.find_signal_alerts()
         with open('/data/user/apizzuto/fast_response_skylab/alert_event_followup/' + \
-                'effective_areas_alerts/gfu_online_effective_area_spline.npy', 'r') as f:
+                'effective_areas_alerts/gfu_online_effective_area_spline.npy', 'rb') as f:
             gfu_eff_spline = pickle.load(f)
         for stream in self.sig_alerts.keys():
             for jjj, (src_dec, src_flux) in enumerate(zip(self.sources['dec'], self.sources['flux'])):
@@ -300,7 +303,7 @@ class TransientUniverse(Universe):
         Run FIRESONG for every year of data
         '''
         tmp_fls, tmp_dec, tmp_zs, tmp_tot = [],[],[],0.
-        for i in range(int(self.data_years) / 1):
+        for i in range(int(self.data_years) // 1):
             uni = self.universe_firesong()
             tmp_dec.extend(uni['sources']['dec']), tmp_fls.extend(uni['sources']['flux'])
             tmp_zs.extend(uni['sources']['z'])
@@ -327,10 +330,16 @@ class TransientUniverse(Universe):
 
 def load_sig(cut = 'tight', stream = 'astro_numu'):
     r'''Load signalness distributions'''
-    with open('/data/user/apizzuto/fast_response_skylab/alert_event_followup/signalness_distributions/{}_{}.csv'.format(stream, cut), 'r') as f:
-        reader = csv.reader(f, delimiter=',')
-        data = np.array(list(reader)).astype(float)
-        sigs, heights = zip(*data)
+    if sys.version[0] == '3':
+        with open('/data/user/apizzuto/fast_response_skylab/alert_event_followup/signalness_distributions/{}_{}.csv'.format(stream, cut), 'rt') as f:
+            reader = csv.reader(f, delimiter=',')
+            data = np.array(list(reader)).astype(float)
+            sigs, heights = zip(*data)
+    else:
+        with open('/data/user/apizzuto/fast_response_skylab/alert_event_followup/signalness_distributions/{}_{}.csv'.format(stream, cut), 'r') as f:
+            reader = csv.reader(f, delimiter=',')
+            data = np.array(list(reader)).astype(float)
+            sigs, heights = zip(*data)
     sigs, heights = list(sigs), list(heights)
     low_sig = find_nearest(np.linspace(0.025, 0.975, 20), sigs[0])
     sigs = np.linspace(low_sig, 0.975, len(heights))
@@ -351,17 +360,21 @@ def sample_from_hist(centers, heights, size = 1):
     return random_from_cdf
 
 def load_dec_dist(cut = 'gold'):
+    if sys.version[0] == '3':
+        read_mode = 'rt'
+    else:
+        read_mode = 'r'
     if cut == 'gold':
-        with open('/data/user/apizzuto/fast_response_skylab/alert_event_followup/signalness_distributions/Gold_backgrounds.csv', 'r') as f:
+        with open('/data/user/apizzuto/fast_response_skylab/alert_event_followup/signalness_distributions/Gold_backgrounds.csv', read_mode) as f:
             reader = csv.reader(f, delimiter=',')
             data = np.array(list(reader)).astype(float)
             decs, heights = zip(*data)   
     else:
-        with open('/data/user/apizzuto/fast_response_skylab/alert_event_followup/signalness_distributions/Gold_backgrounds.csv', 'r') as f:
+        with open('/data/user/apizzuto/fast_response_skylab/alert_event_followup/signalness_distributions/Gold_backgrounds.csv', read_mode) as f:
             reader = csv.reader(f, delimiter=',')
             data = np.array(list(reader)).astype(float)
             decs, heights_gold = zip(*data) 
-        with open('/data/user/apizzuto/fast_response_skylab/alert_event_followup/signalness_distributions/All_backgrounds.csv', 'r') as f:
+        with open('/data/user/apizzuto/fast_response_skylab/alert_event_followup/signalness_distributions/All_backgrounds.csv', read_mode) as f:
             reader = csv.reader(f, delimiter=',')
             data = np.array(list(reader)).astype(float)
             decs, heights_all = zip(*data) 
