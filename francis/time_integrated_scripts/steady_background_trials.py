@@ -73,7 +73,7 @@ def run_background_trials(
             dt1, (dt-dt1)
             ))
 
-    with open(outfile, 'w') as f:
+    with open(outfile, 'wb') as f:
         pickle.dump(allspots, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 

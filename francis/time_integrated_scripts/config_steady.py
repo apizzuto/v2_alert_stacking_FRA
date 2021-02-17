@@ -55,7 +55,7 @@ def config(alert_ind, seed = 1, scramble = True, e_range=(0,np.inf), g_range=[1.
     #seasons = [("GFU_v002_p05", "IC86, 2011-2018"),
     #            (GFU_v002_p05", "IC86, 2019")]
 
-    skymap_files = glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run1*.fits.gz')
+    skymap_files = sorted(glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run1*.fits.gz'))
     skymap_fits, skymap_header = hp.read_map(skymap_files[alert_ind], h=True, verbose=False)
     skymap_header = {name: val for name, val in skymap_header}
     run_id, ev_id = skymap_header['RUNID'], skymap_header['EVENTID']
