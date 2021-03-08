@@ -2,7 +2,7 @@ import numpy as np
 from glob import glob
 import pandas as pd
 import pickle, csv, ast, sys
-sys.path.append('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FIRESONG/')
+# sys.path.append('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FIRESONG/')
 from Firesong import firesong_simulation
 
 data_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/FIRESONG/Results/'
@@ -219,9 +219,11 @@ class SteadyUniverse(Universe):
                                                                 #8.607 from GFUOnline_v01p02 2011-2018 + 2019
 
     def universe_firesong(self):
-        return firesong_simulation('', density=self.density, Evolution=self.evolution,
-                    Transient=False, fluxnorm = self.diffuse_flux_norm,
-                    index=self.diffuse_flux_ind, LF = self.lumi, luminosity=self.manual_lumi, seed=self.seed)
+        return firesong_simulation('', filename=None, density=self.density, 
+            Evolution=self.evolution, Transient=False, 
+            fluxnorm = self.diffuse_flux_norm,
+            index=self.diffuse_flux_ind, LF = self.lumi, 
+            luminosity=self.manual_lumi, seed=self.seed)
 
     def create_universe(self):
         r'''
@@ -294,9 +296,11 @@ class TransientUniverse(Universe):
         self.rng = np.random.RandomState(self.seed)
 
     def universe_firesong(self):
-        return firesong_simulation('', density=self.density, Evolution=self.evolution,
-                    Transient=True, timescale=self.timescale, fluxnorm = self.diffuse_flux_norm,
-                    index=self.diffuse_flux_ind, LF = self.lumi, luminosity=self.manual_lumi, seed=self.seed)
+        return firesong_simulation('', filename=None, density=self.density, 
+            Evolution=self.evolution, Transient=True, 
+            timescale=self.timescale, fluxnorm = self.diffuse_flux_norm,
+            index=self.diffuse_flux_ind, LF = self.lumi, 
+            luminosity=self.manual_lumi, seed=self.seed)
 
     def create_universe(self):
         r'''
@@ -308,6 +312,7 @@ class TransientUniverse(Universe):
             tmp_dec.extend(uni['sources']['dec']), tmp_fls.extend(uni['sources']['flux'])
             tmp_zs.extend(uni['sources']['z'])
             tmp_tot += uni['total_flux']
+            self.seed += 1
             #self.calc_lumi = uni['luminosity']
         #Now do the fraction of a year
         if self.data_years % 1 != 0.0:

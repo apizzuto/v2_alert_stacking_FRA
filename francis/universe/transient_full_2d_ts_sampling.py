@@ -68,5 +68,5 @@ lumi_str = '_manual_lumi_{:.1e}'.format(args.manual_lumi) if args.manual_lumi !=
 print("INITIALIZATION: {:.2f}".format(t1 - t0))
 print("TRIALS: {:.2f}".format(t2-t1))
 print("TOTAL: {:.2f}".format(t2-t0))
-#print(TS)
+print(TS)
 #np.save('/data/user/apizzuto/fast_response_skylab/alert_event_followup/ts_distributions/ts_dists_{}year_density_{:.2e}_evol_{}_lumi_{}{}_delta_t_{:.2e}.npy'.format(data_years, density, evol, lumi, lumi_str, args.delta_t), TS)
