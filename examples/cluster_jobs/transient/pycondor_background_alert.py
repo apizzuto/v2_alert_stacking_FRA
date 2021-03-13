@@ -8,24 +8,25 @@ output = '/scratch/apizzuto/fast_response/condor/output'
 log = '/scratch/apizzuto/fast_response/condor/log'
 submit = '/scratch/apizzuto/fast_response/condor/submit'
 
-job = pycondor.Job('background_fastresponse_alerts','./alert_event_background.py',
-			error=error,
-			output=output,
-			log=log,
-			submit=submit,
-            getenv=True,
-            universe='vanilla',
-			verbose=2, 
-			request_memory=8000,
-            request_cpus=5,
-			extra_lines= ['should_transfer_files = YES', 'when_to_transfer_output = ON_EXIT', 'Requirements =  (Machine != "node128.icecube.wisc.edu")']
-			)
+job = pycondor.Job('background_fastresponse_alerts',
+    '/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/transient_scripts/alert_event_background.py',
+    error=error,
+    output=output,
+    log=log,
+    submit=submit,
+    getenv=True,
+    universe='vanilla',
+    verbose=2, 
+    request_memory=8000,
+    request_cpus=5,
+    extra_lines= ['should_transfer_files = YES', 'when_to_transfer_output = ON_EXIT', 'Requirements =  (Machine != "node128.icecube.wisc.edu")']
+    )
 
 skymap_files = glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run1*.fits.gz')
 
-for index in range(len(skymap_files)):
+for index in range(245, len(skymap_files)):
     for deltaT in np.array([1000., 2.*86400.]):
-        for smear_str in [' --smear', '']:
+        for smear_str in [' --smear']: #, '']:
             #if os.path.exists('/data/user/apizzuto/fast_response_skylab/alert_event_followup/background_ts_distributions/index_{}_time_{:.1f}.pkl'.format(index, deltaT)) and deltaT < 1000.:
             #    continue
             #else:

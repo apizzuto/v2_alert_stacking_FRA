@@ -6,8 +6,6 @@ import pickle
 import csv
 import ast
 import sys
-sys.path.append('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FIRESONG/')
-from Firesong import firesong_simulation
 from transient_universe import TransientUniverse, SteadyUniverse
 
 data_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/FIRESONG/Results/'
