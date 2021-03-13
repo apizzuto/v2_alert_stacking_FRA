@@ -16,7 +16,7 @@ def run_signal_trials(
     poisson=~fit
     smear_str = 'smeared/' if smear else 'norm_prob/'
     outdir = 'fits' if fit else 'sensitivity'
-    alert_df = pd.DataFrame.from_csv('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/icecube_misc/alert_dataframe.csv')
+    alert_df = pd.read_csv('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/icecube_misc/alert_dataframe.csv')
     event_id = alert_df.iloc[index]['Event ID']
     run_id = alert_df.iloc[index]['Run ID']
     outfile = '/data/user/apizzuto/fast_response_skylab/' \
@@ -112,7 +112,7 @@ def run_signal_trials(
             dt1, (dt-dt1)
             ))
 
-    with open(outfile, 'w') as f:
+    with open(outfile, 'wb') as f:
         pickle.dump(allspots, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 
@@ -149,5 +149,5 @@ if __name__ == '__main__':
 
     run_signal_trials(
         args.g, args.i, args.ntrials, args.rng, verbose=args.verbose, 
-        fit=args.fit, smear=smear
+        fit=args.fit, smear=args.smear
         )

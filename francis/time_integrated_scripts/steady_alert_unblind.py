@@ -21,7 +21,7 @@ def unblind_steady_map(
     """DOCSTRING"""
 
     smear_str = 'smeared/' if smear else 'norm_prob/'
-    alert_df = pd.DataFrame.from_csv('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/icecube_misc/alert_dataframe.csv')
+    alert_df = pd.read_csv('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/icecube_misc/alert_dataframe.csv')
     event_id = alert_df.iloc[index]['Event ID']
     run_id = alert_df.iloc[index]['Run ID']
     if not local_skymap:
