@@ -8,12 +8,12 @@ from glob import glob
 import matplotlib as mpl
 #mpl.use('Agg')
 import matplotlib.pyplot as plt
-import seaborn as sns
 import sys
-sys.path.append('/data/user/apizzuto/fast_response_skylab/fast-response/trunk/time_integrated_scripts/')
-import steady_sensitivity_fits
+import seaborn as sns
+from francis.time_integrated_scripts import steady_sensitivity_fits
 import healpy as hp
 import scipy.stats as st
+py_version = int(sys.version[0])
  
 palette = ['#7fc97f', '#beaed4', '#fdc086', '#ffff99', '#386cb0', '#f0027f']
 skymap_files = sorted(glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run*.fits.gz'))
@@ -45,31 +45,47 @@ def find_nearest_idx(array, value):
 def n_to_flux(N, index, delta_t, smear=True):
     smear_str = 'smeared/' if smear else 'norm_prob/'
     fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/sensitivity/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
-    with open(fs[0], 'r') as f:
-        signal_trials = pickle.load(f)
+    if py_version == 3:
+        with open(fs[0], 'rb') as f:
+            signal_trials = pickle.load(f, encoding='latin1')
+    else:
+        with open(fs[0], 'r') as f:
+            signal_trials = pickle.load(f)
     fl_per_one = np.mean(np.array(signal_trials['flux']) / np.array(signal_trials['mean_ninj']))
     return fl_per_one * N
 
 def dec_of_map(index, smear=True):
     smear_str = 'smeared/' if smear else 'norm_prob/'
     fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/sensitivity/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, 1000.0))
-    with open(fs[0], 'r') as f:
-        signal_trials = pickle.load(f)
+    if py_version == 3:
+        with open(fs[0], 'rb') as f:
+            signal_trials = pickle.load(f, encoding='latin1')
+    else:
+        with open(fs[0], 'r') as f:
+            signal_trials = pickle.load(f)
     ra, dec = np.median(signal_trials['ra']), np.median(signal_trials['dec'])
     return ra, dec
 
 def background_distribution(index, delta_t, smear=True):
     smear_str = 'smeared/' if smear else 'norm_prob/'
     fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/bg/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
-    with open(fs[0], 'r') as f:
-        bg_trials = pickle.load(f)
+    if py_version == 3:
+        with open(fs[0], 'rb') as f:
+            bg_trials = pickle.load(f, encoding='latin1')
+    else:
+        with open(fs[0], 'r') as f:
+            bg_trials = pickle.load(f)
     return bg_trials['ts_prior']
 
 def signal_distribution(index, delta_t, ns, smear=True):
     smear_str = 'smeared/' if smear else 'norm_prob/'
     fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/sensitivity/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
-    with open(fs[0], 'r') as f:
-        signal_trials = pickle.load(f)
+    if py_version == 3:
+        with open(fs[0], 'rb') as f:
+            signal_trials = pickle.load(f, encoding='latin1')
+    else:
+        with open(fs[0], 'r') as f:
+            signal_trials = pickle.load(f)
     ret = {}
     msk = np.array(signal_trials['mean_ninj']) == ns
     for k, v in signal_trials.iteritems():
@@ -79,12 +95,20 @@ def signal_distribution(index, delta_t, ns, smear=True):
 def pass_vs_inj(index, delta_t, threshold = 0.5, in_ns = True, with_err = True, trim=-1, smear=True):
     smear_str = 'smeared/' if smear else 'norm_prob/'
     fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/bg/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
-    with open(fs[0], 'r') as f:
-        bg_trials = pickle.load(f)
+    if py_version == 3:
+        with open(fs[0], 'rb') as f:
+            bg_trials = pickle.load(f, encoding='latin1')
+    else:
+        with open(fs[0], 'r') as f:
+            bg_trials = pickle.load(f)
     bg_trials = bg_trials['ts_prior']
     fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/sensitivity/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
-    with open(fs[0], 'r') as f:
-        signal_trials = pickle.load(f)
+    if py_version == 3:
+        with open(fs[0], 'rb') as f:
+            signal_trials = pickle.load(f, encoding='latin1')
+    else:
+        with open(fs[0], 'r') as f:
+            signal_trials = pickle.load(f)
     bg_thresh = np.percentile(bg_trials, threshold * 100.)
     #print(bg_thresh)
     signal_fluxes, signal_indices = np.unique(signal_trials['mean_ninj'], return_index=True)
@@ -113,7 +137,7 @@ def sensitivity_curve(index, delta_t, threshold = 0.5, in_ns = True, with_err = 
                     p0 = None, fontsize = 16, conf_lev = 0.9, smear=True, legend=True, text=True):
     signal_fluxes, passing, errs = pass_vs_inj(index, delta_t, threshold=threshold, in_ns=in_ns, with_err=with_err, trim=trim, smear=smear)
     fits, plist = [], []
-    for ffunc in [chi2cdf, erfunc, incomplete_gamma, fsigmoid]:
+    for ffunc in [erfunc, incomplete_gamma, fsigmoid]:
             try:
                 fits.append(sensitivity_fit(signal_fluxes, 
                     passing, errs, ffunc, p0=p0, conf_lev=conf_lev))
@@ -152,7 +176,7 @@ def calc_sensitivity(index, delta_t, threshold = 0.5, in_ns = True, with_err = T
                     conf_lev = 0.9, p0=None, smear=True):
     signal_fluxes, passing, errs = pass_vs_inj(index, delta_t, threshold=threshold, in_ns=in_ns, with_err=with_err, trim=trim, smear=smear)
     fits, plist = [], []
-    for ffunc in [chi2cdf, erfunc, incomplete_gamma, fsigmoid]:
+    for ffunc in [erfunc, incomplete_gamma, fsigmoid]:
             try:
                 fits.append(sensitivity_fit(signal_fluxes, 
                     passing, errs, ffunc, p0=p0, conf_lev=conf_lev))
@@ -181,7 +205,7 @@ def sensitivity_fit(signal_fluxes, passing, errs, fit_func, p0 = None, conf_lev 
     fit_points = fit_func(signal_fls, *popt)
     chi2 = np.sum((fit_points - passing)**2. / errs**2.)
     dof = len(fit_points) - len(popt)
-    xfit = np.linspace(np.min(signal_fls) - 0.5/signal_scale_fac, np.max(signal_fls), 100)
+    xfit = np.linspace(np.min(signal_fls) - 0.5/signal_scale_fac, np.max(signal_fls), 5000)
     yfit = fit_func(xfit, *popt)
     pval = sp.stats.chi2.sf(chi2, dof)
     sens = xfit[find_nearest_idx(yfit, conf_lev)]*signal_scale_fac
@@ -192,12 +216,20 @@ def sensitivity_fit(signal_fluxes, passing, errs, fit_func, p0 = None, conf_lev 
 def pvals_for_signal(index, delta_t, ns = 1, sigma_units = False, smear=True):
     smear_str = 'smeared/' if smear else 'norm_prob/'
     fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/bg/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
-    with open(fs[0], 'r') as f:
-        bg_trials = pickle.load(f)
+    if py_version == 3:
+        with open(fs[0], 'rb') as f:
+            bg_trials = pickle.load(f, encoding='latin1')
+    else:
+        with open(fs[0], 'r') as f:
+            bg_trials = pickle.load(f)
     bg_trials = bg_trials['ts_prior']
     fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/sensitivity/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
-    with open(fs[0], 'r') as f:
-        signal_trials = pickle.load(f)
+    if py_version == 3:
+        with open(fs[0], 'rb') as f:
+            signal_trials = pickle.load(f, encoding='latin1')
+    else:
+        with open(fs[0], 'r') as f:
+            signal_trials = pickle.load(f)
     pvals = [100. - sp.stats.percentileofscore(bg_trials, ts, kind='strict') for ts in signal_trials['ts_prior']]
     pvals = np.array(pvals)*0.01
     pvals = np.where(pvals==0, 1e-6, pvals)
@@ -208,13 +240,13 @@ def pvals_for_signal(index, delta_t, ns = 1, sigma_units = False, smear=True):
 
 def find_all_sens(delta_t, smear=True, with_disc=True, disc_conf=0.5, 
                     disc_thresh=1.-0.0013, verbose=True):
-    num_alerts = 249
+    num_alerts = 276
     sensitivities = np.zeros(num_alerts)
     if with_disc:
         discoveries = np.zeros(num_alerts)
     for ind in range(num_alerts):
         if verbose:
-            print ind, 
+            print(ind, end=' ')
         try:
             sens = n_to_flux(calc_sensitivity(ind, delta_t, smear=smear)['sens'], 
                                 ind, delta_t, smear=smear)
@@ -237,8 +269,12 @@ def ns_fits_contours(index, delta_t, smear=True, levs = [5., 25., 50., 75., 95.]
     smear_str = 'smeared/' if smear else 'norm_prob/'
     levs = np.array(levs)
     fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/fits/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
-    with open(fs[0], 'r') as f:
-        signal_trials = pickle.load(f)
+    if py_version == 3:
+        with open(fs[0], 'rb') as f:
+            signal_trials = pickle.load(f, encoding='latin1')
+    else:
+        with open(fs[0], 'r') as f:
+            signal_trials = pickle.load(f)
     true_inj = np.array(signal_trials['true_ns'])
     ns_fit = np.array(signal_trials['ns_prior'])
     ninjs = np.unique(true_inj)
@@ -275,7 +311,7 @@ def ns_fits_contours_plot(index, delta_t, smear=True, levs=[5., 25., 50., 75., 9
 def fitting_bias_summary(delta_t, sigs=[2., 5., 10.], smear=True, containment=50.):
     bias = {sig: [] for sig in sigs}; spread = {sig: [] for sig in sigs};
     levs = [50.-containment / 2., 50., 50.+containment / 2.]
-    for ind in range(249):
+    for ind in range(276):
         try:
             ninjs, contours = ns_fits_contours(ind, delta_t, smear=smear, levs=levs)
         except:
@@ -296,8 +332,12 @@ def fitting_bias_summary(delta_t, sigs=[2., 5., 10.], smear=True, containment=50
 def background(index, delta_t, smear=True):
     smear_str = 'smeared/' if smear else 'norm_prob/'
     fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/bg/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
-    with open(fs[0], 'r') as f:
-        bg_trials = pickle.load(f)
+    if py_version == 3:
+        with open(fs[0], 'rb') as f:
+            bg_trials = pickle.load(f, encoding='latin1')
+    else:
+        with open(fs[0], 'r') as f:
+            bg_trials = pickle.load(f)
     return bg_trials
 
 def plot_zoom_from_map(skymap, ind, reso=1., cmap=None, draw_contour=True, ax=None, 
