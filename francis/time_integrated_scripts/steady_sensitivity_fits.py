@@ -14,6 +14,9 @@ from scipy.optimize       import curve_fit
 from scipy.stats          import chi2
 import pickle
 import meander
+import sys
+py_ver = int(sys.version[0])
+
 mpl.style.use('/home/apizzuto/Nova/scripts/novae_plots.mplstyle')
 
 base_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/'
@@ -45,16 +48,25 @@ def find_nearest_idx(array, value):
 
 def load_bg(ind, smear=True):
     smear_str = 'smeared/' if smear else 'norm_prob/'
-    fs = glob(base_path + 'bg/{}index_{}_steady_seed_*.pkl'.format(smear_str, ind))
+    fs = glob(base_path + 'bg/{}index_{}_run_*_steady_seed_*.pkl'.format(smear_str, ind))
     if len(fs) == 0:
         return None
-    with open(fs[0], 'r') as f:
-        bg_trials = pickle.load(f)
-    for fi in fs[1:]:
-        with open(fi, 'r') as f:
-            tmp = pickle.load(f)
-        for k, v in tmp.items():
-            bg_trials[k].extend(v)
+    if py_ver == 3:
+        with open(fs[0], 'rb') as f:
+            bg_trials = pickle.load(f, encoding='latin1')
+        for fi in fs[1:]:
+            with open(fi, 'rb') as f:
+                tmp = pickle.load(f, encoding='latin1')
+            for k, v in tmp.items():
+                bg_trials[k].extend(v)
+    else:
+        with open(fs[0], 'r') as f:
+            bg_trials = pickle.load(f)
+        for fi in fs[1:]:
+            with open(fi, 'r') as f:
+                tmp = pickle.load(f)
+            for k, v in tmp.items():
+                bg_trials[k].extend(v)
     for k in bg_trials.keys():
         bg_trials[k] = np.array(bg_trials[k])
     return bg_trials 
@@ -62,16 +74,25 @@ def load_bg(ind, smear=True):
 def load_sig(ind, gamma=2.0, fits=True, smear=True):
     smear_str = 'smeared/' if smear else 'norm_prob/'
     f_dir = 'fits/{}'.format(smear_str) if fits else 'sensitivity/{}'.format(smear_str)
-    fs = glob(base_path + f_dir + 'index_{}_steady_seed_*_gamma_{:.1f}.pkl'.format(ind, gamma))
+    fs = glob(base_path + f_dir + 'index_{}_run_*_steady_seed_*_gamma_{:.1f}.pkl'.format(ind, gamma))
     if len(fs) == 0:
         return None
-    with open(fs[0], 'r') as f:
-        sig_trials = pickle.load(f)
-    for fi in fs[1:]:
-        with open(fi, 'r') as f:
-            tmp = pickle.load(f)
-        for k, v in tmp.items():
-            sig_trials[k].extend(v)
+    if py_ver == 3:
+        with open(fs[0], 'rb') as f:
+            sig_trials = pickle.load(f, encoding='latin1')
+        for fi in fs[1:]:
+            with open(fi, 'rb') as f:
+                tmp = pickle.load(f, encoding='latin1')
+            for k, v in tmp.items():
+                sig_trials[k].extend(v)
+    else:
+        with open(fs[0], 'r') as f:
+            sig_trials = pickle.load(f)
+        for fi in fs[1:]:
+            with open(fi, 'r') as f:
+                tmp = pickle.load(f)
+            for k, v in tmp.items():
+                sig_trials[k].extend(v)
     for k in sig_trials.keys():
         sig_trials[k] = np.array(sig_trials[k])
     return sig_trials 
@@ -91,7 +112,7 @@ def bg_ns_gamma_plot(ind, ax=None, smear=True):
         fig, ax = plt.subplots()
     bg = load_bg(ind, smear=smear)
     img = ax.hist2d(bg['nsignal'], bg['gamma'], bins=[np.linspace(0., 40., 16), 
-                        np.linspace(1., 5., 16)], norm=LogNorm(), vmin=1, vmax=100, cmin=1)
+                        np.linspace(1., 5., 16)], norm=LogNorm(vmin=1, vmax=100), cmin=1)
     #cbar = plt.colorbar(img, ax=ax, label = 'Counts')
     #cbar.ax.tick_params(direction='out')
     ax.set_xlabel(r'$\hat{n}_s$')
@@ -232,7 +253,8 @@ def fits_contours_plot(ind, gamma=2.0, ns=True, show=False, col='navy green', sm
         plt.show()
 
 def load_map(ind, probs = False):
-    skymap, header = hp.read_map(skymap_files[ind], h=True, verbose=False)
+    skymap, header = hp.read_map(skymap_files[ind], 
+        h=True, verbose=False, dtype=None)
     header = {name: val for name, val in header}
     if probs:
         skymap = np.exp(-1. * skymap / 2.)
@@ -241,7 +263,7 @@ def load_map(ind, probs = False):
     return skymap, header
 
 def area_of_map(ind):
-    skymap, header = load_map(ind, probs=False)
+    skymap, header = load_map(ind, probs=False,)
     nside = hp.get_nside(skymap)
     area = np.count_nonzero(skymap < 64.2) * hp.nside2pixarea(nside) * 180.**2. / (np.pi**2.)
     return area
@@ -268,7 +290,8 @@ def sensitivity_fit(signal_fluxes, passing, errs, fit_func, p0 = None, conf_lev 
             'name': name, 'pval':pval, 'ls':'--', 'sens': sens}
 
 def plot_zoom(ind, LLH=False, reso=1., cmap=None, draw_contour=True, ax=None):
-    skymap, header = hp.read_map(skymap_files[ind], h=True, verbose=False)
+    skymap, header = hp.read_map(skymap_files[ind], h=True, verbose=False,
+        dtype=None)
     header = {name: val for name, val in header}
     nside = hp.get_nside(skymap)
     area = np.count_nonzero(skymap < 64.2) * hp.nside2pixarea(nside) * 180.**2. / (np.pi**2.)
@@ -304,7 +327,10 @@ def plot_zoom(ind, LLH=False, reso=1., cmap=None, draw_contour=True, ax=None):
     original_LLH = skymap if original_LLH is None else original_LLH
     con_nside = 256 if area < 5. else 128
     if draw_contour:
-        contours = plot_contours(None, original_LLH, levels=[22.2, 64.2], nside = con_nside)
+        sample_points = np.array(hp.pix2ang(nside,np.arange(len(original_LLH)))).T
+        msk = original_LLH < 500.
+        contours = plot_contours(None, original_LLH[msk], 
+            sample_points[msk], levels=[22.2, 64.2]) #, nside = con_nside)
         for contour in np.array(contours).T:
             hp.projplot(contour[0],contour[1],linewidth=1.5,c='k')
     col_label=r'$-2\Delta \mathrm{LLH}$' if LLH else "Prob."
@@ -336,7 +362,7 @@ def plot_labels(src_dec, src_ra, reso):
     plt.text(np.radians(0), np.radians(-2*reso), r"right ascension",
                 ha='center', va='center', fontsize=fontsize)
     
-def plot_contours(proportions, samples, levels = None, nside = 128):
+def plot_contours(proportions, samples, sample_points, levels = None):# , nside = 128):
     r''' Plot containment contour around desired level.
     E.g 90% containment of a PDF on a healpix map
 
@@ -359,16 +385,16 @@ def plot_contours(proportions, samples, levels = None, nside = 128):
         levels = []
         sorted_samples = list(reversed(list(sorted(samples))))
         nside = hp.pixelfunc.get_nside(samples)
-        sample_points = np.array(hp.pix2ang(nside,np.arange(len(samples)))).T
+        #sample_points = np.array(hp.pix2ang(nside,np.arange(len(samples)))).T
         for proportion in proportions:
             level_index = (np.cumsum(sorted_samples) > proportion).tolist().index(True)
             level = (sorted_samples[level_index] +
                     (sorted_samples[level_index+1] if level_index+1<len(samples) else 0))/2.0
             levels.append(level)
-    else:
-        samples = hp.pixelfunc.ud_grade(samples, nside)
-        nside = hp.pixelfunc.get_nside(samples)
-        sample_points = np.array(hp.pix2ang(nside,np.arange(len(samples)))).T
+    # else:
+        # samples = hp.pixelfunc.ud_grade(samples, nside)
+        # nside = hp.pixelfunc.get_nside(samples)
+        # sample_points = np.array(hp.pix2ang(nside,np.arange(len(samples)))).T
     contours_by_level = meander.spherical_contours(sample_points, samples, levels)
 
     theta_list = []; phi_list=[]
@@ -393,7 +419,8 @@ def plot_color_bar(labels=[0., 5e3], col_label=r'$-2 \Delta \mathrm{LLH}$',
     cb.update_ticks()
     
 def plot_skymap(ind, LLH=True):
-    skymap, header = hp.read_map(skymap_files[ind], h=True, verbose=False)
+    skymap, header = hp.read_map(skymap_files[ind], h=True, verbose=False,
+        dtype=None)
     header = {name: val for name, val in header}
     original_LLH = None
     if not LLH:
@@ -427,7 +454,10 @@ def plot_skymap(ind, LLH=True):
     plt.text(-2.0, -0.15, r"$0\,\mathrm{h}$", ha="center", va="center")
     original_LLH = skymap if original_LLH is None else original_LLH
     try:
-        contours = plot_contours(None, original_LLH, levels=[22.2, 64.2])
+        sample_points = np.array(hp.pix2ang(nside,np.arange(len(original_LLH)))).T
+        msk = original_LLH < 500.
+        contours = plot_contours(None, original_LLH[msk], sample_points[msk],
+            levels=[22.2, 64.2])
         for contour in np.array(contours).T:
             hp.projplot(contour[0],contour[1],linewidth=1.5,c='k')
     except:

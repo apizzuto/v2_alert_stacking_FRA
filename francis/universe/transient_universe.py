@@ -129,7 +129,7 @@ class Universe():
                 elif self.timescale == 172800.:
                     problem_inds = [198]
                 else:
-                    problem_inds = [157, 73, 198, 142, 76, 147]
+                    problem_inds = [73,  76, 142, 147, 157, 198, 250]
                 while idx in problem_inds:
                     idx = find_nearest_ind(map_decs, dec)
                 sample_dec = map_decs[idx]
@@ -143,7 +143,7 @@ class Universe():
                 elif self.timescale == 172800:
                     problem_inds = [198]
                 else:
-                    problem_inds = [157, 73, 198, 142, 76, 147]
+                    problem_inds = [73,  76, 142, 147, 157, 198, 250]
                 while idx in problem_inds:
                     idx = self.rng.choice(nearby_inds)
                 sample_dec = map_decs[idx]

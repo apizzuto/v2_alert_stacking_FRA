@@ -505,7 +505,7 @@ class UniversePlotter():
             elif self.transient:
                 problem_inds = [198]
             else:
-                problem_inds = [157, 73, 198, 142, 76, 147]
+                problem_inds = [73,  76, 142, 147, 157, 198, 250]
             if ind in problem_inds:
                 continue
             else:
@@ -548,7 +548,7 @@ class UniversePlotter():
             elif self.transient:
                 problem_inds = [198]
             else:
-                problem_inds = [157, 73, 198, 142, 76, 147]
+                problem_inds = [73,  76, 142, 147, 157, 198, 250]
             if ind in problem_inds:
                 continue
             else:
