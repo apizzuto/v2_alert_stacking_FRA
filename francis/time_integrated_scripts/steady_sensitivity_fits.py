@@ -18,6 +18,10 @@ import sys
 py_ver = int(sys.version[0])
 
 mpl.style.use('/home/apizzuto/Nova/scripts/novae_plots.mplstyle')
+alerts = pd.read_csv(
+    '/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/' \
+    + 'francis/icecube_misc/alert_dataframe.csv'
+    )
 
 base_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/'
 #skymap_files = glob('/data/ana/realtime/alert_catalog_v2/2yr_prelim/fits_files/Run*.fits.gz')
@@ -328,7 +332,7 @@ def plot_zoom(ind, LLH=False, reso=1., cmap=None, draw_contour=True, ax=None):
     con_nside = 256 if area < 5. else 128
     if draw_contour:
         sample_points = np.array(hp.pix2ang(nside,np.arange(len(original_LLH)))).T
-        msk = original_LLH < 500.
+        msk = original_LLH < 110.
         contours = plot_contours(None, original_LLH[msk], 
             sample_points[msk], levels=[22.2, 64.2]) #, nside = con_nside)
         for contour in np.array(contours).T:
@@ -455,7 +459,7 @@ def plot_skymap(ind, LLH=True):
     original_LLH = skymap if original_LLH is None else original_LLH
     try:
         sample_points = np.array(hp.pix2ang(nside,np.arange(len(original_LLH)))).T
-        msk = original_LLH < 500.
+        msk = original_LLH < 110.
         contours = plot_contours(None, original_LLH[msk], sample_points[msk],
             levels=[22.2, 64.2])
         for contour in np.array(contours).T:
@@ -467,7 +471,8 @@ def plot_skymap(ind, LLH=True):
 def load_skymap(ind, zoom=True, ax = None):
     if ax is None:
         fig, ax = plt.subplots()
-    title = skymap_files[ind][l_ind:r_ind].replace('_', '_Event_').replace('Run', 'Run_')
+    title = f"Run_{alerts['Run ID'][ind]}_Event_{alerts['Event ID'][ind]}"
+    # title = skymap_files[ind][l_ind:r_ind].replace('_', '_Event_').replace('Run', 'Run_')
     zoom_str = 'zoom_LLH' if zoom else 'allsky'
     image = plt.imread('/data/user/apizzuto/fast_response_skylab/alert_event_followup/alert_skymaps/{}_{}.png'.format(title, zoom_str))
     ax.imshow(image); ax.axis('off')
