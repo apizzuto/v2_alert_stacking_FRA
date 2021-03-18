@@ -50,9 +50,9 @@ output_dir = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/' \
     + 'time_integrated_summary_plots/'
 
 # Make all of the summary plots. This takes a looooooong time (O(hours))
-# for ind in range(len(alerts)):
-redo_inds = [261]
-for ind in redo_inds:
+for ind in range(len(alerts)):
+# redo_inds = [261]
+# for ind in redo_inds:
     # if ind % 50 == 0:
     print(ind, end=' ')
     try:
