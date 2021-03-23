@@ -14,7 +14,7 @@ parser.add_argument('--n', type=int, default=1000,
 parser.add_argument('--density', type=float, default=1e-9,
                         help = 'Local source density')
 parser.add_argument('--LF', type=str, default='SC', help ='luminosity function')
-parser.add_argument('--evol', type=str, default='HB2006SFR', help='Evolution')
+parser.add_argument('--evol', type=str, default='MD2014SFR', help='Evolution')
 parser.add_argument('--manual_lumi', type=float, default=0.0, help='Manually enter luminosity')
 parser.add_argument('--delta_t', type=float, default=2.*86400., help='Analysis timescale')
 #parser.add_argument('--gold', default=False, action='store_true', help='Only analyze gold alerts')
@@ -28,7 +28,8 @@ ps_gold = []
 density = args.density
 evol = args.evol
 lumi = args.LF 
-data_years = 8.6
+data_years = 9.6
+# data_years = 8.6
 #only_gold = args.gold
 t0 = time.time()
 print("STARTING INITIALIZATION")
