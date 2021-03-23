@@ -3,7 +3,7 @@ from glob import glob
 import pandas as pd
 import pickle, csv, ast, sys
 # sys.path.append('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FIRESONG/')
-from Firesong import firesong_simulation
+from firesong.Firesong import firesong_simulation
 
 data_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/FIRESONG/Results/'
 eff_area_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/effective_areas_alerts/'
@@ -110,18 +110,20 @@ class Universe():
 
     def sample_skymap(self, decs):
         r'''Only use real alert event skymap locations'''
-        if sys.version[0] == '3':
-            map_decs = np.load('/data/user/apizzuto/fast_response_skylab/alert_event_followup/effective_areas_alerts/decs_by_ind.npy',
-                allow_pickle=True, encoding='latin1')[1][:]
-        else:
-            map_decs = np.load('/data/user/apizzuto/fast_response_skylab/alert_event_followup/effective_areas_alerts/decs_by_ind.npy')[1][:]
+        if not hasattr(self, 'map_decs'):
+            if sys.version[0] == '3':
+                map_decs = np.load('/data/user/apizzuto/fast_response_skylab/alert_event_followup/effective_areas_alerts/decs_by_ind.npy',
+                    allow_pickle=True, encoding='latin1')[1][:]
+            else:
+                map_decs = np.load('/data/user/apizzuto/fast_response_skylab/alert_event_followup/effective_areas_alerts/decs_by_ind.npy')[1][:]
+            self.map_decs = map_decs
         sample_decs, idxs = [], []
         if isinstance(decs, float):
             decs = [decs]
         for dec in decs:
-            diffs = np.abs(np.sin(map_decs)-np.sin(dec))
+            diffs = np.abs(np.sin(self.map_decs)-np.sin(dec))
             if np.min(diffs) > 0.1:
-                idx = find_nearest_ind(map_decs, dec)
+                idx = find_nearest_ind(self.map_decs, dec)
                 # Some alerts happened during downtime (79, 228), some 
                 # are too large of maps (60)
                 if self.timescale == 1000.:
@@ -131,8 +133,8 @@ class Universe():
                 else:
                     problem_inds = [73,  76, 142, 147, 157, 198, 250]
                 while idx in problem_inds:
-                    idx = find_nearest_ind(map_decs, dec)
-                sample_dec = map_decs[idx]
+                    idx = find_nearest_ind(self.map_decs, dec)
+                sample_dec = self.map_decs[idx]
             else:
                 nearby_inds = np.argwhere(diffs < 0.1).flatten()
                 idx = self.rng.choice(nearby_inds)
@@ -146,7 +148,7 @@ class Universe():
                     problem_inds = [73,  76, 142, 147, 157, 198, 250]
                 while idx in problem_inds:
                     idx = self.rng.choice(nearby_inds)
-                sample_dec = map_decs[idx]
+                sample_dec = self.map_decs[idx]
             sample_decs.append(sample_dec)
             idxs.append(idx)
         return sample_decs, idxs
@@ -223,7 +225,8 @@ class SteadyUniverse(Universe):
             Evolution=self.evolution, Transient=False, 
             fluxnorm = self.diffuse_flux_norm,
             index=self.diffuse_flux_ind, LF = self.lumi, 
-            luminosity=self.manual_lumi, seed=self.seed)
+            luminosity=self.manual_lumi, seed=self.seed,
+            verbose=False)
 
     def create_universe(self):
         r'''
@@ -259,7 +262,10 @@ class SteadyUniverse(Universe):
             self.find_signal_alerts()
         with open('/data/user/apizzuto/fast_response_skylab/alert_event_followup/' + \
                 'effective_areas_alerts/gfu_online_effective_area_spline.npy', 'rb') as f:
-            gfu_eff_spline = pickle.load(f)
+            if sys.version[0] == '3':
+                gfu_eff_spline = pickle.load(f, encoding='latin1')
+            else:
+                gfu_eff_spline = pickle.load(f)
         for stream in self.sig_alerts.keys():
             for jjj, (src_dec, src_flux) in enumerate(zip(self.sources['dec'], self.sources['flux'])):
                 if self.sig_alerts[stream][jjj][0] == 0:
@@ -300,7 +306,8 @@ class TransientUniverse(Universe):
             Evolution=self.evolution, Transient=True, 
             timescale=self.timescale, fluxnorm = self.diffuse_flux_norm,
             index=self.diffuse_flux_ind, LF = self.lumi, 
-            luminosity=self.manual_lumi, seed=self.seed)
+            luminosity=self.manual_lumi, seed=self.seed,
+            verbose=False)
 
     def create_universe(self):
         r'''

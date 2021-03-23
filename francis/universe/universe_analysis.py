@@ -52,6 +52,7 @@ class UniverseAnalysis():
         self.smear = kwargs.pop('smeared', True)
         self.smear_str = 'smeared/' if self.smear else 'norm_prob/'
         self.verbose = kwargs.pop('verbose', False)
+        self.rng = np.random.RandomState(self.rng)
         self.initialize_universe() 
 
     def print_analysis_info(self):
@@ -165,7 +166,7 @@ class UniverseAnalysis():
     #@profile        
     def background_alert_trials(self, ind, calc_p=True):
         if self.transient:
-            trials_file = glob(bg_trials + self.smear_str + 'index_{}_*_time_{:.1f}.pkl'.format(ind, self.deltaT))[0]
+            trials_files = glob(bg_trials + self.smear_str + 'index_{}_*_time_{:.1f}.pkl'.format(ind, self.deltaT))[0]
             if sys.version[0] == '3':
                 trials = np.load(trials_file, allow_pickle=True, encoding='latin1')
             else:
@@ -179,10 +180,10 @@ class UniverseAnalysis():
                     if pval == 0.:
                         pval = 1./np.array(trials['ts_prior']).size
         else:
-            fs = glob(bg_trials + self.smear_str + 'index_{}_steady_seed_*.pkl'.format(ind))
+            fs = glob(bg_trials + self.smear_str + 'index_{}_*_steady_seed_*.pkl'.format(ind))
             #f = np.random.choice(fs)
             #trials = np.load(f) 
-            tmp_ds = [np.load(f) for f in fs]
+            tmp_ds = [np.load(f, allow_pickle=True, encoding='latin1') for f in fs]
             trials = {k:[] for k in tmp_ds[0].keys()}
             for k in trials.keys():
                 for d in tmp_ds:
@@ -216,7 +217,7 @@ class UniverseAnalysis():
                 else:
                     trials = np.load(trials_file)
             else:
-                fs = glob(signal_trials + self.smear_str + 'index_{}_steady_seed_*.pkl'.format(ind))
+                fs = glob(signal_trials + self.smear_str + 'index_{}_*_steady_seed_*.pkl'.format(ind))
                 t_file = np.random.choice(fs)
                 if sys.version[0] == '3':
                     trials = np.load(t_file, allow_pickle=True, encoding='latin1')
@@ -261,7 +262,7 @@ class UniverseAnalysis():
             if pval == 0.:
                 pval = 1./np.array(trials['ts_prior']).size
         else:
-            fs = glob(bg_trials + self.smear_str + 'index_{}_steady_seed_*.pkl'.format(ind))
+            fs = glob(bg_trials + self.smear_str + 'index_{}_*_steady_seed_*.pkl'.format(ind))
             kwargs = {} if not sys.version[0] == '3' else {'encoding': 'latin1', 'allow_pickle': True}
             tmp_ds = [np.load(f, **kwargs) for f in fs]
             trials = {k:[] for k in tmp_ds[0].keys()}
