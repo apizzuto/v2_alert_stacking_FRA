@@ -36,7 +36,7 @@ gammas = [2.5] #np.linspace(2., 3., 3)
 nsigs = [1., 2., 3., 4., 6., 8., 10., 15., 20., 25., 30., 50.]
 deltaT = args.deltaT / 86400.
 
-event_mjd = ev_mjd  #58000.000 #HARDCODE SO THAT THERE IS REAL DATA
+event_mjd = ev_mjd
 start_mjd = event_mjd - (deltaT / 2.)
 stop_mjd = event_mjd + (deltaT / 2.)
 

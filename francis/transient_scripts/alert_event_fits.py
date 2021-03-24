@@ -23,8 +23,7 @@ parser.add_argument('--smear', default=False, action='store_true',
                     help='Include systematics by smearing norm. prob.')
 args = parser.parse_args()
 
-#skymaps_path = '/data/user/steinrob/millipede_scan_archive/fits_v3_prob_map/'
-#files = glob(skymaps_path + '*.fits')
+
 output_paths = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/fits/'
 
 skymap_files = sorted(glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run1*.fits.gz'))
@@ -39,9 +38,7 @@ gammas = [2.5] #np.linspace(2., 3., 3)
 nsigs = [1., 2., 3., 4., 5, 6., 7., 8., 9., 10., 15., 20., 25., 30., 35., 40.]
 deltaT = args.deltaT / 86400. 
 
-#skymap_fits = fits.open(files[args.index])[0]
-#event_mjd = skymap_fits.header['TIME_MJD']
-event_mjd = ev_mjd    #58000.000 #HARDCODE SO THAT THERE IS REAL DATA
+event_mjd = ev_mjd
 start_mjd = event_mjd - (deltaT / 2.)
 stop_mjd = event_mjd + (deltaT / 2.)
 

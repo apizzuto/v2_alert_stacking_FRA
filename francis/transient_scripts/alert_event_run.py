@@ -50,7 +50,7 @@ except:
     message += '\n' + 'Fast Response Followup' + '\n'
     message += '*'*80
     print(message)
-#print(args.skip_events)
+
 #User i/o for reuquired variables that were missed
 final_args = {}
 for argument, name, note in [(args.name, 'Name', 'Enter name of source'), 
@@ -92,16 +92,10 @@ if not args.nodiag:
     f.make_dNdE()
     f.plot_tsd()
     f.upper_limit()
-    #f.ns_scan()
+    
 results = f.save_results()
 f.generate_report()
 if args.document:
     subprocess.call(['cp','-r',results['analysispath'],
         '/home/apizzuto/public_html/FastResponse/webpage/output/{}'.format(results['analysisid'])])
     utils.updateFastResponseWeb(results)
-#DO THE SAME THING FOR THE MONTH LONG ANALYSIS, APPEND SOME OF THE RESULTS TO RESULTS AND 
-# THEN SEND THAT JOINT DICTIONARY TO UTILS.WRITE_ALERT_CIRCULAR
-
-#f.display_results()
-#f.save()
-
