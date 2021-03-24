@@ -8,37 +8,39 @@ output = '/scratch/apizzuto/fast_response/condor/output'
 log = '/scratch/apizzuto/fast_response/condor/log'
 submit = '/scratch/apizzuto/fast_response/condor/submit'
 
-low_mem_job = pycondor.Job('low_mem_calc_ts_dists','/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/universe/transient_full_2d_ts_sampling.py',
-			error=error,
-			output=output,
-			log=log,
-			submit=submit,
-            getenv=True,
-            universe='vanilla',
-			verbose=2, 
-			request_memory=4000,
-            request_cpus=1,
-			extra_lines= ['should_transfer_files = YES', 'when_to_transfer_output = ON_EXIT', 'Requirements =  (Machine != "node128.icecube.wisc.edu")']
-			)
+low_mem_job = pycondor.Job('low_mem_calc_ts_dists',
+    '/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/universe/transient_full_2d_ts_sampling.py',
+    error=error,
+    output=output,
+    log=log,
+    submit=submit,
+    getenv=True,
+    universe='vanilla',
+    verbose=2, 
+    request_memory=4000,
+    request_cpus=1,
+    extra_lines= ['should_transfer_files = YES', 'when_to_transfer_output = ON_EXIT', 'Requirements =  (Machine != "node128.icecube.wisc.edu")']
+    )
 
-high_mem_job = pycondor.Job('high_mem_calc_ts_dists','/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/universe/transient_full_2d_ts_sampling.py',
-			error=error,
-			output=output,
-			log=log,
-			submit=submit,
-            getenv=True,
-            universe='vanilla',
-			verbose=2, 
-			request_memory=8000,
-            request_cpus=1,
-			extra_lines= ['should_transfer_files = YES', 'when_to_transfer_output = ON_EXIT', 'Requirements =  (Machine != "node128.icecube.wisc.edu")']
-			)
+high_mem_job = pycondor.Job('high_mem_calc_ts_dists',
+    '/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/universe/transient_full_2d_ts_sampling.py',
+    error=error,
+    output=output,
+    log=log,
+    submit=submit,
+    getenv=True,
+    universe='vanilla',
+    verbose=2, 
+    request_memory=8000,
+    request_cpus=1,
+    extra_lines= ['should_transfer_files = YES', 'when_to_transfer_output = ON_EXIT', 'Requirements =  (Machine != "node128.icecube.wisc.edu")']
+    )
 
 for delta_t in [1000., 2.*86400.]:
     for manual_lumi in np.logspace(49, 60, 45):
     #for manual_lumi in np.logspace(60, 64, 17):
         for density in np.logspace(-11., -6., 21)[:]:
-            for lumi in ['SC', 'LG']:
+            for lumi in ['SC']: # , 'LG']:
                 for evol in ['MD2014SFR']:
                     if density * manual_lumi * delta_t > 3e54:
                         continue

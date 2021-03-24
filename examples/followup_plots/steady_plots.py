@@ -12,36 +12,37 @@ alerts = pd.read_csv(
 ##############################################################################
 ##########################  This makes all of the skymaps #############
 ##############################################################################
-# output_dir = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/alert_skymaps/'
-# # for ind in range(250, 276):
-# for ind in [168, 249, 275]:
-#     if ind % 25 == 0:
-#         print(ind, end=' ')
-#     run_id = str(alerts['Run ID'][ind])
-#     event_id = str(alerts['Event ID'][ind])
-    
-#     # if run_id == '123986':
-#     #     print(str(ind) + ' is a bad ind')
-#     #     continue
-#     # elif run_id == '129434':
-#     #     print(str(ind) + ' is a bad ind')
-#     #     continue
-#     # elif run_id == '133781':
-#     #     print(str(ind) + ' is a bad ind')
-#     #     continue
-#     base_str = f'{output_dir}Run_{run_id}_Event_{event_id}'
-    
-#     ssf.plot_skymap(ind, LLH=True)
-#     plt.savefig(base_str + '_allsky.png', dpi=120, bbox_inches='tight')
-#     plt.close()
-    
-#     ssf.plot_zoom(ind, LLH=True)
-#     plt.savefig(base_str + '_zoom_LLH.png', dpi=120, bbox_inches='tight')
-#     plt.close()
-    
-#     ssf.plot_zoom(ind, LLH=False)
-#     plt.savefig(base_str + '_probs.png', dpi=120, bbox_inches='tight')
-#     plt.close()
+alerts_already_made = True
+if not alerts_already_made:
+    output_dir = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/alert_skymaps/'
+    for ind in range(276):
+        if ind % 25 == 0:
+            print(ind, end=' ')
+        run_id = str(alerts['Run ID'][ind])
+        event_id = str(alerts['Event ID'][ind])
+        
+        if run_id == '123986':
+            print(str(ind) + ' is a bad ind')
+            continue
+        elif run_id == '129434':
+            print(str(ind) + ' is a bad ind')
+            continue
+        elif run_id == '133781':
+            print(str(ind) + ' is a bad ind')
+            continue
+        base_str = f'{output_dir}Run_{run_id}_Event_{event_id}'
+        
+        ssf.plot_skymap(ind, LLH=True)
+        plt.savefig(base_str + '_allsky.png', dpi=120, bbox_inches='tight')
+        plt.close()
+        
+        ssf.plot_zoom(ind, LLH=True)
+        plt.savefig(base_str + '_zoom_LLH.png', dpi=120, bbox_inches='tight')
+        plt.close()
+        
+        ssf.plot_zoom(ind, LLH=False)
+        plt.savefig(base_str + '_probs.png', dpi=120, bbox_inches='tight')
+        plt.close()
 
 ##############################################################################
 #############  For each alert, make a few summary plots          #############
@@ -51,10 +52,8 @@ output_dir = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/' \
 
 # Make all of the summary plots. This takes a looooooong time (O(hours))
 for ind in range(len(alerts)):
-# redo_inds = [261]
-# for ind in redo_inds:
-    # if ind % 50 == 0:
-    print(ind, end=' ')
+    if ind % 50 == 0:
+        print(ind, end=' ')
     try:
         event_header = ssf.panel_plot_with_text(ind, smear=True, return_info=True)
         plt.savefig(output_dir \
@@ -166,5 +165,5 @@ try:
 except Exception as e:
     print(e)
     pass
-plt.savefig('/data/user/apizzuto/fast_response_skylab/dump/alert_event_sens_vs_dec_steady_smeared.png', 
+plt.savefig('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/figures/followup_plots/steady/alert_event_sens_vs_dec_steady_smeared.png', 
                bbox_inches='tight', dpi=200)
