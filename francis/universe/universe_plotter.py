@@ -372,7 +372,7 @@ class UniversePlotter():
                             + fmt_path.format(self.data_years, dens, lumi))
                         lower_10[ii, jj] = np.percentile(trials[0], 10.)
                         med_TS[ii, jj] = np.median(trials[0])
-                    except IOError, e:
+                    except IOError as e:
                         lower_10[ii, jj] = np.nan
                         med_TS[ii, jj] = np.nan
         med_TS = np.where(np.isnan(med_TS), self.background_median_ts, med_TS)
@@ -403,7 +403,7 @@ class UniversePlotter():
                             + fmt_path.format(self.data_years, dens, lumi))
                         lower_10_p[ii, jj] = np.percentile(trials[2], 90.)
                         med_p[ii, jj] = np.median(trials[2])
-                    except IOError, e:
+                    except IOError as e:
                         lower_10_p[ii, jj] = np.nan
                         med_p[ii, jj] = np.nan
         med_p = np.where(np.isnan(med_p), self.background_median_p, med_p)
@@ -423,8 +423,9 @@ class UniversePlotter():
                 ts = np.load(self.ts_path + \
                     'ts_dists_{}year_density_{:.2e}_'.format(self.data_years, density) + \
                     self.evol_lumi_str + self.steady_str + '.npy')
-            except Exception, e:
-                continue
+            except Exception as e:
+                print(e)
+                #continue
             dens.append(density)
             levels.append(np.percentile(ts[ts_inds[ts_or_p]], [5, 25, 50, 75, 95]))
         levels = np.array(levels).T
@@ -469,7 +470,7 @@ class UniversePlotter():
             try:
                 ts = np.load(self.ts_path + 'ts_dists_{}year_density_{:.2e}_'.format(self.data_years, density)
                                 + self.evol_lumi_str + self.steady_str + '.npy')
-            except IOError, e:
+            except IOError as e:
                 continue
             ts_bins = np.logspace(-1., 2., 31) if log_ts else np.linspace(0., 15., 31)
             axs[0].hist(ts[ts_inds[0]], bins = ts_bins, label = r'$\rho = $' 
@@ -686,7 +687,7 @@ class UniversePlotter():
                         trials = np.load(self.ts_path \
                             + fmt_path.format(self.data_years, dens, lumi))
                         containment[ii, jj] = sp.stats.percentileofscore(trials[ts_p_ind], obs_val)
-                    except IOError, e:
+                    except IOError as e:
                         containment[ii, jj] = 0.
         if upper_limit and in_ts:
             containment = (50. - containment)*2.
