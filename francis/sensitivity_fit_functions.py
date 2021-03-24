@@ -43,6 +43,17 @@ def find_nearest_idx(array, value):
     return idx
 
 def n_to_flux(N, index, delta_t, smear=True):
+    """Convert number of events to a flux
+    
+    Args:
+        N (float): signal strength in number of injected events 
+        index (int): Alert event index 
+        delta_t (float): Time window (1000. or 864000.)
+        smear (bool, default=True): Correct for systematics in skymap treatment
+
+    Returns:
+        float: Flux in default units returned by skylab injector
+    """
     smear_str = 'smeared/' if smear else 'norm_prob/'
     fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/sensitivity/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
     if py_version == 3:
@@ -55,6 +66,15 @@ def n_to_flux(N, index, delta_t, smear=True):
     return fl_per_one * N
 
 def dec_of_map(index, smear=True):
+    """Find the location of the best-fit for an alert
+
+    Args:
+        index (int): Alert event index 
+        smear (bool, default=True): Correct for systematics in skymap treatment
+
+    Returns:
+        (float, float): RA, Dec of best-fit location from millipede scan
+    """
     smear_str = 'smeared/' if smear else 'norm_prob/'
     fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/sensitivity/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, 1000.0))
     if py_version == 3:
@@ -67,6 +87,16 @@ def dec_of_map(index, smear=True):
     return ra, dec
 
 def background_distribution(index, delta_t, smear=True):
+    """Obtain background TS distribution for an alert event
+    
+    Args:
+        index (int): Alert event index 
+        delta_t (float): Time window (1000. or 864000.)
+        smear (bool, default=True): Correct for systematics in skymap treatment
+
+    Returns:
+        array: list of TS values
+    """
     smear_str = 'smeared/' if smear else 'norm_prob/'
     fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/bg/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
     if py_version == 3:
@@ -78,6 +108,17 @@ def background_distribution(index, delta_t, smear=True):
     return bg_trials['ts_prior']
 
 def signal_distribution(index, delta_t, ns, smear=True):
+    """Obtain signal TS distribution for an alert event
+    
+    Args:
+        index (int): Alert event index 
+        delta_t (float): Time window (1000. or 864000.)
+        ns (float): Injected signal strength in number of events
+        smear (bool, default=True): Correct for systematics in skymap treatment
+
+    Returns:
+        dict: Signal trials
+    """
     smear_str = 'smeared/' if smear else 'norm_prob/'
     fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/sensitivity/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
     if py_version == 3:
@@ -93,6 +134,25 @@ def signal_distribution(index, delta_t, ns, smear=True):
     return ret
 
 def pass_vs_inj(index, delta_t, threshold = 0.5, in_ns = True, with_err = True, trim=-1, smear=True):
+    """Calculate the efficiency curve for fraction of TS greater
+    than a threshold TS as a function of signal strength
+    
+    Args:
+        index (int): Alert event index 
+        delta_t (float): Time window (1000. or 864000.)
+        threshold (float, default=0.5): Value of CDF of background to compare
+            against (0.5 means compare against median)
+        in_ns (bool, default=True): Return in ns or in flux
+        with_err (bool, default=True): Include an estimation of the error
+            on the passing fraction
+        trim (int, default=-1): Trim off the final few points from the curve,
+            this sometimes improves the fits
+        smear (bool, default=True): Correct for systematics in skymap treatment
+
+    Returns:
+        (array, array, array): Arrays containing the flux, passing-fractions,
+            and errors
+    """
     smear_str = 'smeared/' if smear else 'norm_prob/'
     fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/bg/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
     if py_version == 3:
@@ -135,6 +195,23 @@ def pass_vs_inj(index, delta_t, threshold = 0.5, in_ns = True, with_err = True, 
     
 def sensitivity_curve(index, delta_t, threshold = 0.5, in_ns = True, with_err = True, trim=-1, ax = None, 
                     p0 = None, fontsize = 16, conf_lev = 0.9, smear=True, legend=True, text=True):
+    """Calculate the sensitivity and plot it for an alert event
+    
+    Args:
+        index (int): Alert event index 
+        delta_t (float): Time window (1000. or 864000.)
+        threshold (float, default=0.5): Value of CDF of background to compare
+            against (0.5 means compare against median)
+        in_ns (bool, default=True): Return in ns or in flux
+        with_err (bool, default=True): Include an estimation of the error
+            on the passing fraction
+        trim (int, default=-1): Trim off the final few points from the curve,
+            this sometimes improves the fits
+        ax (axes, default=None): Use already made axes instance
+        p0 (array-like, default=None): initial params for sensitivity fit
+        conf_lev (float, default=0.9): Confidence level for the sensitivity
+        smear (bool, default=True): Correct for systematics in skymap treatment
+    """
     signal_fluxes, passing, errs = pass_vs_inj(index, delta_t, threshold=threshold, in_ns=in_ns, with_err=with_err, trim=trim, smear=smear)
     fits, plist = [], []
     for ffunc in [erfunc, incomplete_gamma, fsigmoid]:
@@ -174,6 +251,25 @@ def sensitivity_curve(index, delta_t, threshold = 0.5, in_ns = True, with_err = 
     
 def calc_sensitivity(index, delta_t, threshold = 0.5, in_ns = True, with_err = True, trim=-1, 
                     conf_lev = 0.9, p0=None, smear=True):
+    """Calculate the sensitivity for an alert event
+    
+    Args:
+        index (int): Alert event index 
+        delta_t (float): Time window (1000. or 864000.)
+        threshold (float, default=0.5): Value of CDF of background to compare
+            against (0.5 means compare against median)
+        in_ns (bool, default=True): Return in ns or in flux
+        with_err (bool, default=True): Include an estimation of the error
+            on the passing fraction
+        trim (int, default=-1): Trim off the final few points from the curve,
+            this sometimes improves the fits
+        p0 (array-like, default=None): initial params for sensitivity fit
+        conf_lev (float, default=0.9): Confidence level for the sensitivity
+        smear (bool, default=True): Correct for systematics in skymap treatment
+
+    Returns:
+        dict: Sensitivity dictionary
+    """
     signal_fluxes, passing, errs = pass_vs_inj(index, delta_t, threshold=threshold, in_ns=in_ns, with_err=with_err, trim=trim, smear=smear)
     fits, plist = [], []
     for ffunc in [erfunc, incomplete_gamma, fsigmoid]:
@@ -193,6 +289,19 @@ def calc_sensitivity(index, delta_t, threshold = 0.5, in_ns = True, with_err = T
     return {'sens': inter, 'name': 'linear_interpolation'}
     
 def sensitivity_fit(signal_fluxes, passing, errs, fit_func, p0 = None, conf_lev = 0.9):
+    """Fit passing fraction with an analytic function
+    
+    Args:
+        signal_fluxes (array): signal strengths
+        passing (array): Passing fractions
+        errs (array): Errors on passing fractions
+        fit_func (function): Function to fit to data
+        p0 (array-like, default=None): initial params for sensitivity fit
+        conf_lev (float, default=0.9): Confidence level for the sensitivity
+
+    Returns:
+        dict: Sensitivity dictionary
+    """
     try:
         name = fit_func.__name__
         name = name.replace("_", " ")
@@ -214,6 +323,19 @@ def sensitivity_fit(signal_fluxes, passing, errs, fit_func, p0 = None, conf_lev 
             'name': name, 'pval':pval, 'ls':'--', 'sens': sens}
 
 def pvals_for_signal(index, delta_t, ns = 1, sigma_units = False, smear=True):
+    """Calculate pre trial p-values for a certain injected signal strength
+        for a certain alert event
+    
+    Args:
+        index (int): Alert event index 
+        delta_t (float): Time window (1000. or 864000.)
+        ns (int, default=1): Injected signal strength in number of events
+        sigma_units (bool, default=False): Return number of sigma significance
+        smear (bool, default=True): Correct for systematics in skymap treatment
+
+    Returns:
+        array: List of p-values or significances
+    """
     smear_str = 'smeared/' if smear else 'norm_prob/'
     fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/bg/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
     if py_version == 3:
@@ -240,6 +362,19 @@ def pvals_for_signal(index, delta_t, ns = 1, sigma_units = False, smear=True):
 
 def find_all_sens(delta_t, smear=True, with_disc=True, disc_conf=0.5, 
                     disc_thresh=1.-0.0013, verbose=True):
+    """Find the sensitivity for all alerts for a certain analysis
+    time-window
+    
+    Args:
+        delta_t (float): Time window (1000. or 864000.)
+        smear (bool, default=True): Correct for systematics in skymap treatment
+        with_disc (bool, default=True): Also calculate discovery potential
+        disc_conf (bool, default=0.5): Confidence level for discovery potential
+        disc_thresh (float): p-value for discovery potential (default is 3 sigma)
+
+    Returns:
+        array: List of sensitivities
+    """
     num_alerts = 276
     sensitivities = np.zeros(num_alerts)
     if with_disc:
@@ -266,6 +401,17 @@ def find_all_sens(delta_t, smear=True, with_disc=True, disc_conf=0.5,
         return sensitivities
 
 def ns_fits_contours(index, delta_t, smear=True, levs = [5., 25., 50., 75., 95.]):
+    """Calculate the ns_bias plot contours
+    
+    Args:
+        index (int): Alert event index 
+        delta_t (float): Time window (1000. or 864000.)
+        smear (bool, default=True): Correct for systematics in skymap treatment
+        levs (arr): percentiles used in the ns contours
+
+    Returns:
+        (array, array): List of strengths and corresponding bias contours
+    """
     smear_str = 'smeared/' if smear else 'norm_prob/'
     levs = np.array(levs)
     fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/fits/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
@@ -286,6 +432,14 @@ def ns_fits_contours(index, delta_t, smear=True, levs = [5., 25., 50., 75., 95.]
 def ns_fits_contours_plot(index, delta_t, smear=True, levs=[5., 25., 50., 75., 95.],
                       show=False, col='navy green', custom_label = 'Median', ax=None,
                       xlabel=True, ylabel=True, legend=True):
+    """Calculate the ns_bias plot contours and plot them
+    
+    Args:
+        index (int): Alert event index 
+        delta_t (float): Time window (1000. or 864000.)
+        smear (bool, default=True): Correct for systematics in skymap treatment
+        levs (arr): percentiles used in the ns contours
+    """
     if ax is None:
         fig, ax = plt.subplots()
     ninj, fits = ns_fits_contours(index, delta_t, smear=smear, levs=levs)
@@ -309,6 +463,17 @@ def ns_fits_contours_plot(index, delta_t, smear=True, levs=[5., 25., 50., 75., 9
         plt.show()
 
 def fitting_bias_summary(delta_t, sigs=[2., 5., 10.], smear=True, containment=50.):
+    """Calculate the ns_bias plot contours for all alert events
+    
+    Args:
+        delta_t (float): Time window (1000. or 864000.)
+        sigs (arr): Injected signal strength values for comparison
+        smear (bool, default=True): Correct for systematics in skymap treatment
+        containment (float): Central percentage for the fit contours
+
+    Returns:
+        (array, array): List of bias and variance of contours
+    """
     bias = {sig: [] for sig in sigs}; spread = {sig: [] for sig in sigs};
     levs = [50.-containment / 2., 50., 50.+containment / 2.]
     for ind in range(276):
@@ -330,6 +495,16 @@ def fitting_bias_summary(delta_t, sigs=[2., 5., 10.], smear=True, containment=50
     return bias, spread
 
 def background(index, delta_t, smear=True):
+    """Obtain the background distributions for an event
+    
+    Args:
+        index (int): Alert event index 
+        delta_t (float): Time window (1000. or 864000.)
+        smear (bool, default=True): Correct for systematics in skymap treatment
+    
+    Returns:
+        dict: background trials
+    """
     smear_str = 'smeared/' if smear else 'norm_prob/'
     fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/bg/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
     if py_version == 3:
@@ -342,6 +517,12 @@ def background(index, delta_t, smear=True):
 
 def plot_zoom_from_map(skymap, ind, reso=1., cmap=None, draw_contour=True, ax=None, 
                       col_label= r'$\log_{10}$(prob.)'):
+    """Plot skymap of an alert event
+    
+    Args:
+        skymap (arr): healpy array
+        index (int): Alert event index 
+    """
     s, header = hp.read_map(skymap_files[ind], h=True, verbose=False)
     header = {name: val for name, val in header}
     nside = hp.get_nside(s)
@@ -361,7 +542,7 @@ def plot_zoom_from_map(skymap, ind, reso=1., cmap=None, draw_contour=True, ax=No
     else:
         max_color =  -1.8 #5 #max(skymap)
         min_color = -5.  #0.
-    #min_color = np.min([0., 2.*max_color])
+    
     hp.gnomview(skymap, rot=(np.degrees(ra), np.degrees(dec), 0),
                     cmap=cmap,
                     max=max_color,
@@ -385,6 +566,13 @@ def plot_zoom_from_map(skymap, ind, reso=1., cmap=None, draw_contour=True, ax=No
 
 
 def background_hotspot_map(ind, delta_t, smear=True):
+    """Show where background trials recover hotspots
+    
+    Args:
+        ind (int): Alert event index 
+        delta_t (float): Time window (1000. or 864000.)
+        smear (bool, default=True): Correct for systematics in skymap treatment
+    """
     bg = background(ind, delta_t, smear=smear)
     msk = np.array(bg['ts_prior']) != 0.
     ra, dec = np.array(bg['ra'])[msk], np.array(bg['dec'])[msk]
@@ -396,6 +584,13 @@ def background_hotspot_map(ind, delta_t, smear=True):
     plot_zoom_from_map(reco_hist, ind, draw_contour=False, col_label='Counts')
 
 def get_true_fit(ind, delta_t, smear=True):
+    """Get unblinded results for an alert followup
+    
+    Args:
+        ind (int): Alert event index 
+        delta_t (float): Time window (1000. or 864000.)
+        smear (bool, default=True): Correct for systematics in skymap treatment
+    """
     name = skymap_files[ind][skymap_files[ind].find('Run')+3:skymap_files[ind].find('_nside')]
     run = name[:name.find('_')]
     event = name[name.find('_') + 1:]
@@ -408,6 +603,16 @@ def get_true_fit(ind, delta_t, smear=True):
 ############# REPEAT THIS IN THE STEADY FITS FILE
 ##############################################################################
 def get_true_pval(ind, delta_t, smear=True):
+    """Get unblinded p-value for an alert followup
+    
+    Args:
+        ind (int): Alert event index 
+        delta_t (float): Time window (1000. or 864000.)
+        smear (bool, default=True): Correct for systematics in skymap treatment
+
+    Returns:
+        float: pre trial p-value for alert followup
+    """
     result = get_true_fit(ind, delta_t, smear=smear)
     bg_trials = background(ind, delta_t, smear=smear)
     bg_ts = bg_trials['ts_prior']
@@ -415,7 +620,16 @@ def get_true_pval(ind, delta_t, smear=True):
     return p_val
 
 def get_true_pval_list(delta_t, smear=True):
-    problem_inds = [60, 79, 228] if delta_t == 1000. else [60]
+    """Get unblinded p-value for all alert followups of a certain time window
+    
+    Args:
+        delta_t (float): Time window (1000. or 864000.)
+        smear (bool, default=True): Correct for systematics in skymap treatment
+
+    Returns:
+        arr: pre trial p-values for alert followup
+    """
+    problem_inds = [198, 95, 92] if delta_t == 1000. else [198]
     pval_list = []
     for ind in range(len(skymap_files)):
         if ind in problem_inds:
@@ -426,6 +640,15 @@ def get_true_pval_list(delta_t, smear=True):
     return np.array(pval_list)
 
 def get_binomial_p_value_truth(delta_t, smear=True):
+    """Calculate the unblinded pre-trial binomial p-value
+    
+    Args:
+        delta_t (float): Time window (1000. or 864000.)
+        smear (bool, default=True): Correct for systematics in skymap treatment
+
+    Returns:
+        float: pre trial binomial p-value for alert followup
+    """
     print("CAUTION: ONLY RUN THIS IF YOU HAVE PERMISSION TO LOOK AT REAL DATA")
     obs_p = 1.
     plist = get_true_pval_list(delta_t, smear=smear)

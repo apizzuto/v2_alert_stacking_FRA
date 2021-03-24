@@ -4,11 +4,8 @@ Modified version of Josh Wood's multi-year config file which can be found
 here: skylab/doc/analyses/icecube-170922A_wGFU/config.py 
 """
 
-
-import os, sys, pickle
 import numpy as np 
 import healpy as hp
-from time import time
 import pandas as pd
 
 from   glob                     import glob
@@ -19,9 +16,7 @@ from   skylab.temporal_scrambling import TimeScrambler
 
 from   skylab.llh_models        import ClassicLLH, EnergyLLH
 from   skylab.datasets          import Datasets
-from astropy.io                 import fits
 
-from skylab.utils               import dist
 from skylab.priors              import SpatialPrior
 
 # energy units

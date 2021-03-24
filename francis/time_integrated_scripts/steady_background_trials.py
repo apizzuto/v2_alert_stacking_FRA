@@ -18,7 +18,16 @@ def run_background_trials(
         index, seed, smear=True, ntrials=1000,
         verbose=True
         ):
-    """DOCSTRING"""
+    """Run the background trials for a time-integrated alert followup.
+    
+    Args:
+        index (int): Alert event index
+        ntrials (int): number of trials
+        seed (int): random number seed
+        verbose (bool, default=True): print output
+        smear (bool, default=True): Account for sytematics in the skymap
+            millipede localization
+    """
     smear_str = 'smeared/' if smear else 'norm_prob/'
     alert_df = pd.read_csv('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/icecube_misc/alert_dataframe.csv')
     event_id = alert_df.iloc[index]['Event ID']

@@ -24,7 +24,6 @@ alerts = pd.read_csv(
     )
 
 base_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/'
-#skymap_files = glob('/data/ana/realtime/alert_catalog_v2/2yr_prelim/fits_files/Run*.fits.gz')
 skymap_files = sorted(glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run*.fits.gz'))
 
 
@@ -51,6 +50,15 @@ def find_nearest_idx(array, value):
     return idx
 
 def load_bg(ind, smear=True):
+    """Obtain background TS distribution for an alert event
+    
+    Args:
+        ind (int): Alert event index 
+        smear (bool, default=True): Correct for systematics in skymap treatment
+
+    Returns:
+        dict: Background trial dictionary
+    """
     smear_str = 'smeared/' if smear else 'norm_prob/'
     fs = glob(base_path + 'bg/{}index_{}_run_*_steady_seed_*.pkl'.format(smear_str, ind))
     if len(fs) == 0:
@@ -76,6 +84,17 @@ def load_bg(ind, smear=True):
     return bg_trials 
 
 def load_sig(ind, gamma=2.0, fits=True, smear=True):
+    """Obtain signal TS distribution for an alert event
+    
+    Args:
+        ind (int): Alert event index 
+        gamma (float, default=2.0): Injected spectral index
+        fits (bool, default=True): If false, load poisson fluctuated trials
+        smear (bool, default=True): Correct for systematics in skymap treatment
+
+    Returns:
+        dict: Signal trials
+    """
     smear_str = 'smeared/' if smear else 'norm_prob/'
     f_dir = 'fits/{}'.format(smear_str) if fits else 'sensitivity/{}'.format(smear_str)
     fs = glob(base_path + f_dir + 'index_{}_run_*_steady_seed_*_gamma_{:.1f}.pkl'.format(ind, gamma))
@@ -102,6 +121,12 @@ def load_sig(ind, gamma=2.0, fits=True, smear=True):
     return sig_trials 
 
 def bg_ts_plot(ind, ax=None, smear=True):
+    """Plot background TS distribution for an alert event
+    
+    Args:
+        ind (int): Alert event index 
+        smear (bool, default=True): Correct for systematics in skymap treatment
+    """
     if ax is None:
         fig, ax = plt.subplots()
     bg = load_bg(ind, smear=smear)
@@ -112,17 +137,38 @@ def bg_ts_plot(ind, ax=None, smear=True):
     ax.set_ylabel('Counts')
 
 def bg_ns_gamma_plot(ind, ax=None, smear=True):
+    """Plot background distribution of what values of ns and gamma
+    get fit for background only trials
+    
+    Args:
+        ind (int): Alert event index 
+        smear (bool, default=True): Correct for systematics in skymap treatment
+    """
     if ax is None:
         fig, ax = plt.subplots()
     bg = load_bg(ind, smear=smear)
     img = ax.hist2d(bg['nsignal'], bg['gamma'], bins=[np.linspace(0., 40., 16), 
                         np.linspace(1., 5., 16)], norm=LogNorm(vmin=1, vmax=100), cmin=1)
-    #cbar = plt.colorbar(img, ax=ax, label = 'Counts')
-    #cbar.ax.tick_params(direction='out')
     ax.set_xlabel(r'$\hat{n}_s$')
     ax.set_ylabel(r'$\hat{\gamma}$')
 
 def pass_vs_inj(ind, gamma = 2.0, thresh = 0.5, smear=True, with_err = True):
+    """Calculate the efficiency curve for fraction of TS greater
+    than a threshold TS as a function of signal strength
+    
+    Args:
+        ind (int): Alert event index 
+        gamma (float): injected spectral index
+        thresh (float, default=0.5): Value of CDF of background to compare
+            against (0.5 means compare against median)
+        with_err (bool, default=True): Include an estimation of the error
+            on the passing fraction
+        smear (bool, default=True): Correct for systematics in skymap treatment
+
+    Returns:
+        (array, array, array): Arrays containing the flux, passing-fractions,
+            and errors
+    """
     bg_trials = load_bg(ind, smear=smear)
     signal_trials = load_sig(ind, gamma=gamma, fits=False, smear=smear)
     bg_thresh = np.percentile(bg_trials['TS'], thresh * 100.)
@@ -149,6 +195,22 @@ def pass_vs_inj(ind, gamma = 2.0, thresh = 0.5, smear=True, with_err = True):
 
 def steady_sensitivity(ind, gamma=2.0, thresh = 0.5, with_err = True, 
                         smear=True, conf_lev = 0.9, p0=None):
+    """Calculate the sensitivity for an alert event
+    
+    Args:
+        ind (int): Alert event index 
+        thresh (float, default=0.5): Value of CDF of background to compare
+            against (0.5 means compare against median)
+        gamma (float): injected spectral index
+        with_err (bool, default=True): Include an estimation of the error
+            on the passing fraction
+        p0 (array-like, default=None): initial params for sensitivity fit
+        conf_lev (float, default=0.9): Confidence level for the sensitivity
+        smear (bool, default=True): Correct for systematics in skymap treatment
+
+    Returns:
+        dict: Sensitivity dictionary
+    """
     signal_fluxes, passing, errs = pass_vs_inj(ind, gamma=gamma, thresh=thresh, 
                                                 with_err=with_err, smear=smear)
     fits, plist = [], []
@@ -169,7 +231,20 @@ def steady_sensitivity(ind, gamma=2.0, thresh = 0.5, with_err = True,
 
 def steady_sensitivity_curve(ind, gamma=2.0, thresh = 0.5, with_err = True, smear=True, ax = None, 
                     p0 = None, fontsize = 16, conf_lev = 0.9):
+    """Calculate the sensitivity and plot it for an alert event
     
+    Args:
+        index (int): Alert event index 
+        gamma (float): injected spectral index
+        thresh (float, default=0.5): Value of CDF of background to compare
+            against (0.5 means compare against median)
+        with_err (bool, default=True): Include an estimation of the error
+            on the passing fraction
+        ax (axes, default=None): Use already made axes instance
+        p0 (array-like, default=None): initial params for sensitivity fit
+        conf_lev (float, default=0.9): Confidence level for the sensitivity
+        smear (bool, default=True): Correct for systematics in skymap treatment
+    """
     signal_fluxes, passing, errs = pass_vs_inj(ind, gamma=gamma, thresh=thresh, 
                                                 smear=smear, with_err=with_err)
     fits, plist = [], []
@@ -206,6 +281,18 @@ def steady_sensitivity_curve(ind, gamma=2.0, thresh = 0.5, with_err = True, smea
     ax.legend(loc=4, fontsize = fontsize)
 
 def fits_contours(ind, gamma=2.0, smear=True, ns=True, levs = [5., 25., 50., 75., 95.]):
+    """Calculate the ns_bias plot contours
+    
+    Args:
+        ind (int): Alert event index 
+        gamma (float, default=2.0): injected spectral index
+        ns (bool, default=True): ns or gamma fits
+        smear (bool, default=True): Correct for systematics in skymap treatment
+        levs (arr): percentiles used in the ns contours
+
+    Returns:
+        (array, array): List of strengths and corresponding bias contours
+    """
     sig_trials = load_sig(ind, gamma=gamma, smear=smear)
     key = 'nsignal' if ns else 'gamma'
     msks = [sig_trials['inj_nsignal'] == ni for ni in np.linspace(1., 60., 60)]
@@ -221,6 +308,12 @@ def fits_contours(ind, gamma=2.0, smear=True, ns=True, levs = [5., 25., 50., 75.
     return ninjs, np.array(conf_levs).T
 
 def gamma_fits_plots(ind, smear=True, cols=['navy green', 'navy blue', 'orangey red'], ax=None):
+    """Calculate the recovered gamma bias plot contours and plot them
+    
+    Args:
+        ind (int): Alert event index 
+        smear (bool, default=True): Correct for systematics in skymap treatment
+    """
     if ax is None:
         fig, ax = plt.subplots()
     for gamma, col in zip([2.5], ['navy blue']): #zip([2.0, 2.5, 3.0], cols):
@@ -231,6 +324,14 @@ def gamma_fits_plots(ind, smear=True, cols=['navy green', 'navy blue', 'orangey 
 
 def fits_contours_plot(ind, gamma=2.0, ns=True, show=False, col='navy green', smear=True,
                       custom_label = 'Median', ax=None):
+    """Calculate the ns_bias plot contours and plot them
+    
+    Args:
+        ind (int): Alert event index 
+        gamma (float, default=2.0): injected spectral index
+        ns (bool, default=True): ns or gamma fits
+        smear (bool, default=True): Correct for systematics in skymap treatment
+    """
     if ax is None:
         fig, ax = plt.subplots()
     ninj, fits = fits_contours(ind, ns = ns, gamma=gamma, smear=smear)
@@ -257,6 +358,12 @@ def fits_contours_plot(ind, gamma=2.0, ns=True, show=False, col='navy green', sm
         plt.show()
 
 def load_map(ind, probs = False):
+    """Get the skymap for a certain alert event
+
+    Args:
+        ind (int): Alert event index 
+        probs (bool, default=False): Return normalized probability (not smeared)
+    """
     skymap, header = hp.read_map(skymap_files[ind], 
         h=True, verbose=False, dtype=None)
     header = {name: val for name, val in header}
@@ -267,12 +374,33 @@ def load_map(ind, probs = False):
     return skymap, header
 
 def area_of_map(ind):
+    """Get the area enclosed by the systematic 90% contour
+
+    Args:
+        ind (int): Alert event index 
+    
+    Returns:
+        float: area in square degrees of 90% contour
+    """
     skymap, header = load_map(ind, probs=False,)
     nside = hp.get_nside(skymap)
     area = np.count_nonzero(skymap < 64.2) * hp.nside2pixarea(nside) * 180.**2. / (np.pi**2.)
     return area
 
 def sensitivity_fit(signal_fluxes, passing, errs, fit_func, p0 = None, conf_lev = 0.9):
+    """Fit passing fraction with an analytic function
+    
+    Args:
+        signal_fluxes (array): signal strengths
+        passing (array): Passing fractions
+        errs (array): Errors on passing fractions
+        fit_func (function): Function to fit to data
+        p0 (array-like, default=None): initial params for sensitivity fit
+        conf_lev (float, default=0.9): Confidence level for the sensitivity
+
+    Returns:
+        dict: Sensitivity dictionary
+    """
     try:
         name = fit_func.__name__
         name = name.replace("_", " ")
@@ -294,6 +422,12 @@ def sensitivity_fit(signal_fluxes, passing, errs, fit_func, p0 = None, conf_lev 
             'name': name, 'pval':pval, 'ls':'--', 'sens': sens}
 
 def plot_zoom(ind, LLH=False, reso=1., cmap=None, draw_contour=True, ax=None):
+    """Plot skymap of an alert event
+    
+    Args:
+        ind (int): Alert event index
+        LLH (bool, default=False): plot LLH vs. scaled probs.
+    """
     skymap, header = hp.read_map(skymap_files[ind], h=True, verbose=False,
         dtype=None)
     header = {name: val for name, val in header}
@@ -423,6 +557,12 @@ def plot_color_bar(labels=[0., 5e3], col_label=r'$-2 \Delta \mathrm{LLH}$',
     cb.update_ticks()
     
 def plot_skymap(ind, LLH=True):
+    """Plot skymap of an alert event
+    
+    Args:
+        ind (int): Alert event index
+        LLH (bool, default=False): plot LLH vs. scaled probs.
+    """
     skymap, header = hp.read_map(skymap_files[ind], h=True, verbose=False,
         dtype=None)
     header = {name: val for name, val in header}
@@ -479,6 +619,12 @@ def load_skymap(ind, zoom=True, ax = None):
 
 
 def info_panel_plot(ind, smear=True):
+    """Make a whole bunch of plots for one alert event
+    
+    Args:
+        ind (int): Alert event index
+        smear (bool, default=True): Correct for systematics in skymap treatment
+    """
     fig, axs = plt.subplots(nrows=2, ncols=5, figsize=(28, 8), dpi=250)
     plt.subplots_adjust(wspace=0.2, hspace=0.25)
     load_skymap(ind, ax=axs[0,0])
@@ -495,6 +641,13 @@ def info_panel_plot(ind, smear=True):
 
 
 def panel_plot_with_text(ind, smear=True, return_info=False):
+    """Make a whole bunch of plots for one alert event, including
+    some text information
+    
+    Args:
+        ind (int): Alert event index
+        smear (bool, default=True): Correct for systematics in skymap treatment
+    """
     fig = plt.figure(constrained_layout=True, figsize=(20,12))
     heights = [1.5, 1, 1]
     gs = gridspec.GridSpec(ncols=3, nrows=3, figure=fig, height_ratios=heights)
@@ -514,14 +667,8 @@ def panel_plot_with_text(ind, smear=True, return_info=False):
     ax3 = fig.add_subplot(gs[1, 0]); bg_ts_plot(ind, smear=smear, ax=ax3)
     ax4 = fig.add_subplot(gs[1, 1]); bg_ns_gamma_plot(ind, smear=smear, ax=ax4)
     ax5 = fig.add_subplot(gs[1, 2]); gamma_fits_plots(ind, smear=smear, ax = ax5)
-    #ax6 = fig.add_subplot(gs[1, 3]); fits_contours_plot(ind, smear=smear, gamma=2.0, ax = ax6)
     ax7 = fig.add_subplot(gs[2, 0]); fits_contours_plot(ind, smear=smear, gamma=2.5, col='navy blue', ax = ax7)
-    #ax8 = fig.add_subplot(gs[2, 1]); fits_contours_plot(ind, smear=smear, gamma=3.0, col='orangey red', ax = ax8)
-    #ax9 = fig.add_subplot(gs[2, 2]); sensitivity_curve(ind, smear=smear, gamma=2.0, ax = ax9)
     ax10 = fig.add_subplot(gs[2, 1]); steady_sensitivity_curve(ind, smear=smear, gamma=2.5, ax = ax10)
-    #ax11 = fig.add_subplot(gs[3, 0]); sensitivity_curve(ind, smear=smear, gamma=3.0, ax = ax11)
-    #ax12 = fig.add_subplot(gs[3, 1]); sensitivity_curve(ind, smear=smear, gamma=2.0, ax = ax12, conf_lev=0.5, thresh=0.99865)
     ax13 = fig.add_subplot(gs[2, 2]); steady_sensitivity_curve(ind, smear=smear, gamma=2.5, ax = ax13, conf_lev=0.5, thresh=0.99865)
-    #ax14 = fig.add_subplot(gs[3, 3]); sensitivity_curve(ind, smear=smear, gamma=3.0, ax = ax14, conf_lev=0.5, thresh=0.99865)
     if return_info:
         return header

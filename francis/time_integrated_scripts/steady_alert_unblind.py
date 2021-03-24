@@ -18,7 +18,17 @@ def unblind_steady_map(
     index, seed, smear=True, local_skymap=False,
     verbose=True
     ):
-    """DOCSTRING"""
+    """Unblind a time-integrated alert followup.
+    
+    Args:
+        index (int): Alert event index
+        seed (int): random number seed
+        verbose (bool, default=True): print output
+        smear (bool, default=True): Account for sytematics in the skymap
+            millipede localization
+        local_skymap (bool, default=False): return the local TS landscape
+            vs. ra and dec or just the trials at the best-fit
+    """
 
     smear_str = 'smeared/' if smear else 'norm_prob/'
     alert_df = pd.read_csv('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/icecube_misc/alert_dataframe.csv')

@@ -11,7 +11,18 @@ def run_signal_trials(
     gamma, index, ntrials, seed, verbose=True, 
     fit=True, smear=True
     ):
-    """DOCSTRING"""
+    """Run the signal trials for a time-integrated alert followup.
+    
+    Args:
+        gamma (float): Injected spectral index
+        index (int): Alert event index
+        ntrials (int): number of trials
+        seed (int): random number seed
+        verbose (bool, default=True): print output
+        fit (bool, default=True): if True, do not poisson fluctuate fluxes
+        smear (bool, default=True): Account for sytematics in the skymap
+            millipede localization
+    """
 
     poisson=~fit
     smear_str = 'smeared/' if smear else 'norm_prob/'
@@ -143,7 +154,7 @@ if __name__ == '__main__':
         )                
     parser.add_argument(
         '--smear', default=False, action='store_true',
-        help='Include systematics by smearing norm. prob.'
+        help='Include systematics by smearing norm. prob., The unblinded version will use this flag'
         )
     args = parser.parse_args()
 
