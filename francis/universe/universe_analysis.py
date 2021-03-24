@@ -6,7 +6,7 @@ import pickle
 import csv
 import ast
 import sys
-from transient_universe import TransientUniverse, SteadyUniverse
+from francis.universe.transient_universe import TransientUniverse, SteadyUniverse
 
 data_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/FIRESONG/Results/'
 eff_area_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/effective_areas_alerts/'
@@ -52,7 +52,6 @@ class UniverseAnalysis():
         self.smear = kwargs.pop('smeared', True)
         self.smear_str = 'smeared/' if self.smear else 'norm_prob/'
         self.verbose = kwargs.pop('verbose', False)
-        self.rng = np.random.RandomState(self.rng)
         self.initialize_universe() 
 
     def print_analysis_info(self):
@@ -76,6 +75,10 @@ class UniverseAnalysis():
 
     #@profile
     def initialize_universe(self):
+        """Simulate sources with the given cosmological parameters,
+        also find the alert events as well as the additional injected
+        events
+        """
         if self.verbose:
             print("Simulating universe with specified cosmological parameters")
         self.universe.create_universe()
@@ -85,6 +88,9 @@ class UniverseAnalysis():
 
     #@profile
     def make_alerts_dataframe(self):
+        """
+        Reformat the results from the simulation into a dataframe
+        """
         alerts = {'signalness': [], 'declination': [], 'background': [], 
           'skymap_ind': [], 'stream': [], 'skymap_dec': [],
          'extra_evs': []}
@@ -114,6 +120,7 @@ class UniverseAnalysis():
 
     #@profile
     def reinitialize_universe(self):
+        """Change the seed and reinitialize everything"""
         if self.verbose:
             print("Recreating universe for more trials, updating seed")
         self.seed = 1 if self.seed is None else self.seed + 1
@@ -125,6 +132,10 @@ class UniverseAnalysis():
 
     #@profile
     def calculate_ts(self, only_gold = False, calc_p=True):
+        """
+        Based off of the additional injected events, sample
+        trials and calculate the final test statistics
+        """
         ts, sigs, ps = [], [], []
         self.alert_df['TS'] = [None] * len(self.alert_df['background'])
         self.alert_df['pval'] = [None] * len(self.alert_df['background'])
@@ -165,6 +176,9 @@ class UniverseAnalysis():
 
     #@profile        
     def background_alert_trials(self, ind, calc_p=True):
+        """If an alert is a background alert, sample from the background
+        trials
+        """
         if self.transient:
             trials_files = glob(bg_trials + self.smear_str + 'index_{}_*_time_{:.1f}.pkl'.format(ind, self.deltaT))[0]
             if sys.version[0] == '3':
@@ -181,8 +195,6 @@ class UniverseAnalysis():
                         pval = 1./np.array(trials['ts_prior']).size
         else:
             fs = glob(bg_trials + self.smear_str + 'index_{}_*_steady_seed_*.pkl'.format(ind))
-            #f = np.random.choice(fs)
-            #trials = np.load(f) 
             tmp_ds = [np.load(f, allow_pickle=True, encoding='latin1') for f in fs]
             trials = {k:[] for k in tmp_ds[0].keys()}
             for k in trials.keys():
@@ -198,7 +210,6 @@ class UniverseAnalysis():
                     pval = float(np.count_nonzero(trials['TS'] >= ts)) / trials['TS'].size
                     if pval == 0.:
                         pval = 1./np.array(trials['ts_prior']).size
-        #ts = np.random.choice(trials['ts_prior'])
         del trials
         if calc_p:
             return ts, pval
@@ -207,6 +218,8 @@ class UniverseAnalysis():
 
     #@profile
     def signal_alert_trials(self, ind, N, calc_p = True):
+        """If alerts are signal alerts and have additional injected
+        events, sample the relevant signal trials"""
         if N == 0:
             ts = self.background_alert_trials(ind, calc_p = False)
         else:
@@ -250,6 +263,7 @@ class UniverseAnalysis():
 
     #@profile
     def calculate_trial_pvalue(self, ind, TS):
+        """Find a p-value from TS value for a specific alert"""
         if TS == 0:
             return 1.
         if self.transient:
@@ -279,6 +293,8 @@ class UniverseAnalysis():
 
     #@profile
     def calculate_binomial_pvalue(self, only_gold=False):
+        """With a list of p-values, do a scan over the possible
+        number of sources to find the binomial p-value"""
         if self.TS is None:
             self.calculate_ts(only_gold = only_gold, calc_p=True) 
         plist = self.alert_df['pval']

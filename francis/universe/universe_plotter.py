@@ -783,11 +783,7 @@ class UniversePlotter():
             sens_disc_upper = comp_factor * (lower_bound_comp - reference_val_upper)
 
             sens_disc = sens_disc_lower * sens_disc_upper
-
-            # cs_ts_upper = ax.contour(X, Y, sens_disc_upper, colors=['k'], 
-            #             levels=[0.0], linewidths=1.5, linestyles='dashed')
-            # cs_ts_lower = ax.contour(X, Y, sens_disc_lower, colors=['k'], 
-            #             levels=[0.0], linewidths=1.5, linestyles='dashed')           
+          
             cs_ts = ax.contour(X, Y, sens_disc, colors=['k'], 
                                   levels=[0.0], linewidths=1.5, linestyles='dashed')
             csf = ax.contourf(X, Y, sens_disc, cmap=self.cmap, 
@@ -796,8 +792,7 @@ class UniversePlotter():
             
         xs = np.logspace(-11., -6., 1000)
         ys_median = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
-        # ys_max = self.no_evol_energy_density / xs / self.seconds_per_year if self.transient else self.no_evol_energy_density / xs
-        # ys_min = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
+        
         if not rotated:
             plt.plot(np.log10(xs), np.log10(ys_median), color = sns.xkcd_rgb['dodger blue'], lw=1.5)
             for sig in ['one_sigma', 'two_sigma']:

@@ -64,7 +64,6 @@ class Universe():
             for level in ['gold', 'bronze']:
                 tmp[sample + '_' + level] = []
                 for dec in [-45., 0., 45]:
-                    #test_fl = 1.0 #Is it just the numu contribution for HESE?
                     test_fl = 3.0 if sample == 'HESE' else 1.0 #eff A for HESE is all flavor
                     tmp[sample + '_' + level].append(calc_mean_n(ens, dec, stream=sample, 
                         level=level, gamma=self.diffuse_flux_ind*-1., flux_norm=test_fl))
@@ -77,7 +76,6 @@ class Universe():
         for stream in ['GFU', 'HESE']:
             for cut, lev in [('gold', 'tight'), ('bronze', 'loose')]:
                 sig_alerts[stream + '_' + cut] = [(0,0.,0.)]*len(self.sources['dec'])
-        #sig_alerts = [(0,0.,'','')]*len(self.sources['dec'])
         kept_inds = set([])
         for stream in ['GFU', 'HESE']:
             for cut, lev in [('gold', 'tight'), ('bronze', 'loose')]:
@@ -90,9 +88,6 @@ class Universe():
                 kept_inds = kept_inds | set(non_zero_inds)
         kept_inds = np.array(list(kept_inds))
         self.kept_inds = kept_inds #keep track for looking at redshifts
-        #print(kept_inds)
-        #print("BEFORE TRIM")
-        #print(len(self.sources['dec']))
         for key in self.sources.keys():
             if len(kept_inds) > 0:
                 self.sources[key] = self.sources[key][kept_inds]
@@ -103,8 +98,6 @@ class Universe():
                 sig_alerts[key] = list(np.array(sig_alerts[key])[kept_inds])
             else:
                 sig_alerts[key] = list(np.array(sig_alerts[key])[np.array([0])])
-        #print("AFTER TRIM")
-        #print(len(self.sources['dec']))
         self.sig_alerts = sig_alerts
         return sig_alerts
 
@@ -124,8 +117,8 @@ class Universe():
             diffs = np.abs(np.sin(self.map_decs)-np.sin(dec))
             if np.min(diffs) > 0.1:
                 idx = find_nearest_ind(self.map_decs, dec)
-                # Some alerts happened during downtime (79, 228), some 
-                # are too large of maps (60)
+                # Some alerts happened during downtime, some 
+                # are too large of maps
                 if self.timescale == 1000.:
                     problem_inds = [198, 95, 92]
                 elif self.timescale == 172800.:
@@ -138,8 +131,8 @@ class Universe():
             else:
                 nearby_inds = np.argwhere(diffs < 0.1).flatten()
                 idx = self.rng.choice(nearby_inds)
-                # Some alerts happened during downtime (79, 228), some 
-                # are too large of maps (60)
+                # Some alerts happened during downtime, some 
+                # are too large of maps
                 if self.timescale == 1000.:
                     problem_inds = [198, 95, 92]
                 elif self.timescale == 172800:
@@ -320,7 +313,6 @@ class TransientUniverse(Universe):
             tmp_zs.extend(uni['sources']['z'])
             tmp_tot += uni['total_flux']
             self.seed += 1
-            #self.calc_lumi = uni['luminosity']
         #Now do the fraction of a year
         if self.data_years % 1 != 0.0:
             uni = self.universe_firesong()

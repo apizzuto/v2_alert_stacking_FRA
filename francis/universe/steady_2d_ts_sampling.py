@@ -13,7 +13,6 @@ parser.add_argument('--density', type=float, default=1e-9,
 parser.add_argument('--LF', type=str, default='SC', help ='luminosity function')
 parser.add_argument('--evol', type=str, default='MD2014SFR', help='Evolution')
 parser.add_argument('--manual_lumi', type=float, default=0.0, help='Manually enter luminosity')
-#parser.add_argument('--gold', default=False, action='store_true', help='Only analyze gold alerts')
 args = parser.parse_args()
 
 TS = []
@@ -24,16 +23,11 @@ ps_gold = []
 density = args.density
 evol = args.evol
 lumi = args.LF
-#only_gold = args.gold
-# data_years = 8.6
 data_years = 9.6
 print("STARTING INITIALIZATION")
 
-#uni = UniverseAnalysis(lumi, evol, density, 1.01e-8, 2.19, deltaT=2*86400., 
-#        data_years=2, manual_lumi=args.manual_lumi)
 uni = UniverseAnalysis(lumi, evol, density, 1.5e-8, 2.50, 
         data_years=data_years, manual_lumi=args.manual_lumi)
-#uni.initialize_universe()
 uni.print_analysis_info()
 uni.make_alerts_dataframe()
 print('Running trials . . . ')
@@ -52,9 +46,6 @@ for jj in range(args.n - 1):
     ps.append(uni.calculate_binomial_pvalue(only_gold=False))
     ps_gold.append(uni.calculate_binomial_pvalue(only_gold=True))
 
-#TS = np.array(TS)
-#TS_gold = np.array(TS_gold)
 TS = np.array([TS, TS_gold, ps, ps_gold])
 lumi_str = '_manual_lumi_{:.1e}'.format(args.manual_lumi) if args.manual_lumi != 0.0 else ''
-print(TS)
 np.save('/data/user/apizzuto/fast_response_skylab/alert_event_followup/ts_distributions/ts_dists_{}year_density_{:.2e}_evol_{}_lumi_{}{}_steady.npy'.format(data_years, density, evol, lumi, lumi_str), TS)
