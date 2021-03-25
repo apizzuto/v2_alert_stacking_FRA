@@ -10,3 +10,5 @@ Scripts to run trials (background, bias tests, sensitivity) for short timescale 
 
 ### `luminosity_constraints`
 Scripts to run trials for using FIRESONG to simulate populations of neutrinos sources and compare to the performance of this analysis
+
+Running any of the scripts as is, when on one of the submit nodes, will submit the relevant jobs to the cluster.
