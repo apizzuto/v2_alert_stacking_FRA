@@ -29,7 +29,7 @@ for i in range(len(alert_fs)):
         stream = 'EHE'
     else:
         stream = None
-        print("WTF")
+        print("What stream is this??")
     df_dict['Stream'].append(stream)
     if 'gold' in skymap_header['I3TYPE'].lower():
         cut = 'GOLD'
@@ -45,4 +45,6 @@ for i in range(len(alert_fs)):
     df_dict['RA err'].append(ra_err)
 
 alert_df = pd.DataFrame.from_dict(df_dict)
-alert_df.to_csv('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/icecube_misc/alert_dataframe.csv')
+from francis import utils
+f_path = utils.get_francis_path()
+alert_df.to_csv(f_path + 'icecube_misc/alert_dataframe.csv')
