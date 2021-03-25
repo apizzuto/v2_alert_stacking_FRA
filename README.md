@@ -32,7 +32,7 @@ I've provided a `setup.py` file so that the user may either install via pip (`py
 * CVMFS: `/cvmfs/icecube.opensciencegrid.org/py3-v4.1.0/setup.sh`
 * The realtime metaproject, which is can be built as a parasitic build off of icerec (see instructions on the FRA wiki on how to install this)
 * Skylab
-* [FIRESONG](https://github.com/icecube/FIRESONG)
+* [FIRESONG](https://github.com/icecube/FIRESONG): Note, you will need to have a version of FIRESONG where the modules are importable. Right now, this is available in a branch of FIRESONG that can be found [here](https://github.com/icecube/FIRESONG/tree/feature/pip-installable).
 * [Fast Response Analysis](https://github.com/icecube/FastResponseAnalysis)
 * [PyCondor](https://github.com/jrbourbeau/pycondor)
     - This is a helpful little package that James Bourbeau wrote for interfacing with the cluster. It can be installed via pip: `pip install pycondor`
