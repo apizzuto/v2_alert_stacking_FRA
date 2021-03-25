@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
 import os, sys, time, pickle
-sys.path.append('/data/user/apizzuto/fast_response_skylab/fast-response/trunk/alert_event_followup/')
 import numpy as np
-from transient_universe import TransientUniverse
-from universe_analysis import UniverseAnalysis
+from francis.universe.transient_universe import TransientUniverse
+from francis.universe.universe_analysis import UniverseAnalysis
 import argparse
 import time
 

@@ -2,11 +2,11 @@ import numpy as np
 from glob import glob
 import pandas as pd
 import pickle, csv, ast, sys
-# sys.path.append('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FIRESONG/')
 from firesong.Firesong import firesong_simulation
+from francis import utils
+f_path = utils.get_francis_path()
 
-data_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/FIRESONG/Results/'
-eff_area_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/effective_areas_alerts/'
+eff_area_path = f_path + 'icecube_misc/effective_areas_alerts/'
 
 bg_rates = {'HESE_gold': 0.4, 'HESE_bronze': 0.9, 'GFU_gold': 5.7, 'GFU_bronze': 13.8}
 
@@ -105,10 +105,10 @@ class Universe():
         r'''Only use real alert event skymap locations'''
         if not hasattr(self, 'map_decs'):
             if sys.version[0] == '3':
-                map_decs = np.load('/data/user/apizzuto/fast_response_skylab/alert_event_followup/effective_areas_alerts/decs_by_ind.npy',
+                map_decs = np.load(eff_area_path + 'decs_by_ind.npy',
                     allow_pickle=True, encoding='latin1')[1][:]
             else:
-                map_decs = np.load('/data/user/apizzuto/fast_response_skylab/alert_event_followup/effective_areas_alerts/decs_by_ind.npy')[1][:]
+                map_decs = np.load(eff_area_path + 'decs_by_ind.npy')[1][:]
             self.map_decs = map_decs
         sample_decs, idxs = [], []
         if isinstance(decs, float):
@@ -171,8 +171,7 @@ class Universe():
                 extra_events[stream + '_' + cut] = np.zeros(len(self.sources['dec']))
         if self.sig_alerts is None:
             self.find_signal_alerts()
-        with open('/data/user/apizzuto/fast_response_skylab/alert_event_followup/' + \
-                'effective_areas_alerts/gfu_online_effective_area_spline.npy', 'rb') as f:
+        with open(eff_area_path + 'gfu_online_effective_area_spline.npy', 'rb') as f:
             if sys.version[0] == '3':
                 gfu_eff_spline = pickle.load(f, encoding='latin1')
             else:
@@ -253,8 +252,7 @@ class SteadyUniverse(Universe):
                 extra_events[stream + '_' + cut] = np.zeros(len(self.sources['dec']))
         if self.sig_alerts is None:
             self.find_signal_alerts()
-        with open('/data/user/apizzuto/fast_response_skylab/alert_event_followup/' + \
-                'effective_areas_alerts/gfu_online_effective_area_spline.npy', 'rb') as f:
+        with open(eff_area_path + 'gfu_online_effective_area_spline.npy', 'rb') as f:
             if sys.version[0] == '3':
                 gfu_eff_spline = pickle.load(f, encoding='latin1')
             else:
@@ -335,12 +333,12 @@ class TransientUniverse(Universe):
 def load_sig(cut = 'tight', stream = 'astro_numu'):
     r'''Load signalness distributions'''
     if sys.version[0] == '3':
-        with open('/data/user/apizzuto/fast_response_skylab/alert_event_followup/signalness_distributions/{}_{}.csv'.format(stream, cut), 'rt') as f:
+        with open(f_path + 'icecube_misc/signalness_distributions/{}_{}.csv'.format(stream, cut), 'rt') as f:
             reader = csv.reader(f, delimiter=',')
             data = np.array(list(reader)).astype(float)
             sigs, heights = zip(*data)
     else:
-        with open('/data/user/apizzuto/fast_response_skylab/alert_event_followup/signalness_distributions/{}_{}.csv'.format(stream, cut), 'r') as f:
+        with open(f_path + 'icecube_misc/signalness_distributions/{}_{}.csv'.format(stream, cut), 'r') as f:
             reader = csv.reader(f, delimiter=',')
             data = np.array(list(reader)).astype(float)
             sigs, heights = zip(*data)
@@ -369,16 +367,16 @@ def load_dec_dist(cut = 'gold'):
     else:
         read_mode = 'r'
     if cut == 'gold':
-        with open('/data/user/apizzuto/fast_response_skylab/alert_event_followup/signalness_distributions/Gold_backgrounds.csv', read_mode) as f:
+        with open(f_path + 'icecube_misc/signalness_distributions/Gold_backgrounds.csv', read_mode) as f:
             reader = csv.reader(f, delimiter=',')
             data = np.array(list(reader)).astype(float)
             decs, heights = zip(*data)   
     else:
-        with open('/data/user/apizzuto/fast_response_skylab/alert_event_followup/signalness_distributions/Gold_backgrounds.csv', read_mode) as f:
+        with open(f_path + 'icecube_misc/signalness_distributions/Gold_backgrounds.csv', read_mode) as f:
             reader = csv.reader(f, delimiter=',')
             data = np.array(list(reader)).astype(float)
             decs, heights_gold = zip(*data) 
-        with open('/data/user/apizzuto/fast_response_skylab/alert_event_followup/signalness_distributions/All_backgrounds.csv', read_mode) as f:
+        with open(f_path + 'icecube_misc/signalness_distributions/All_backgrounds.csv', read_mode) as f:
             reader = csv.reader(f, delimiter=',')
             data = np.array(list(reader)).astype(float)
             decs, heights_all = zip(*data) 

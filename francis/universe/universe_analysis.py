@@ -4,11 +4,9 @@ import pandas as pd
 import scipy.stats as st
 import pickle
 import csv
-import ast
 import sys
 from francis.universe.transient_universe import TransientUniverse, SteadyUniverse
 
-data_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/FIRESONG/Results/'
 eff_area_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/effective_areas_alerts/'
 
 def centers(arr):
@@ -180,7 +178,7 @@ class UniverseAnalysis():
         trials
         """
         if self.transient:
-            trials_files = glob(bg_trials + self.smear_str + 'index_{}_*_time_{:.1f}.pkl'.format(ind, self.deltaT))[0]
+            trials_file = glob(bg_trials + self.smear_str + 'index_{}_*_time_{:.1f}.pkl'.format(ind, self.deltaT))[0]
             if sys.version[0] == '3':
                 trials = np.load(trials_file, allow_pickle=True, encoding='latin1')
             else:

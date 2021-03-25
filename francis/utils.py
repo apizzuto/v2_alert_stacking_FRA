@@ -4,7 +4,7 @@ mpl.use('Agg')
 
 def get_francis_path():
     import francis
-    return os.path.join(francis.__file__, '../')
+    return os.path.abspath(os.path.join(francis.__file__, os.pardir)) + '/'
 
 def initialize_mpl_style():
     base = get_francis_path()

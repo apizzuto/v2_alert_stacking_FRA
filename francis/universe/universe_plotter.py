@@ -13,7 +13,12 @@ import pickle
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
-mpl.style.use('/home/apizzuto/Nova/scripts/novae_plots.mplstyle')
+import sys
+py_ver = int(sys.version[0])
+from francis import utils
+utils.initialize_mpl_style()
+f_path = utils.get_francis_path()
+
 
 skymap_files = sorted(glob(
     '/data/ana/realtime/alert_catalog_v2/fits_files/Run1*.fits.gz'
@@ -43,6 +48,8 @@ energy_density_uncertainty = {'transient': {
                           'NoEvolution': {}
                           }}
 
+firesong_trials_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/ts_distributions/'
+followup_trials_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/'
 
 class UniversePlotter():
     r'''
@@ -68,7 +75,7 @@ class UniversePlotter():
         self.lumi_str = {'SC': 'Standard Candle', 'LG': 'Log Normal'}[self.lumi]
         self.evol_str = {'HB2006SFR': 'Hopkins and Beacom 2006 SFR',
                             'MD2014SFR': 'Madau and Dickinson 2014 CSFH'}[self.evol]
-        self.ts_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/ts_distributions/'
+        self.ts_path = firesong_trials_path
         self.steady_str = '_delta_t_{:.2e}'.format(self.delta_t) if self.transient else '_steady'
         self.time_window_per_year = (365. * 86400.) / (self.delta_t) if self.transient else 1.
         key = 'transient' if self.transient else 'steady'
@@ -368,8 +375,13 @@ class UniversePlotter():
                     med_TS[ii, jj] = self.background_median_ts
                 else:
                     try:
-                        trials = np.load(self.ts_path \
-                            + fmt_path.format(self.data_years, dens, lumi))
+                        if py_ver == 3:
+                            trials = np.load(self.ts_path \
+                                + fmt_path.format(self.data_years, dens, lumi),
+                                allow_pickle=True, encoding='latin1')
+                        else:
+                            trials = np.load(self.ts_path \
+                                + fmt_path.format(self.data_years, dens, lumi))
                         lower_10[ii, jj] = np.percentile(trials[0], 10.)
                         med_TS[ii, jj] = np.median(trials[0])
                     except IOError as e:
@@ -399,11 +411,17 @@ class UniversePlotter():
                     med_p[ii, jj] = self.background_median_p
                 else:
                     try:
-                        trials = np.load(self.ts_path \
-                            + fmt_path.format(self.data_years, dens, lumi))
+                        if py_ver == 3:
+                            trials = np.load(self.ts_path \
+                                + fmt_path.format(self.data_years, dens, lumi),
+                                allow_pickle=True, encoding='latin1')
+                        else:
+                            trials = np.load(self.ts_path \
+                                + fmt_path.format(self.data_years, dens, lumi))
                         lower_10_p[ii, jj] = np.percentile(trials[2], 90.)
                         med_p[ii, jj] = np.median(trials[2])
                     except IOError as e:
+                        print(lumi, dens)
                         lower_10_p[ii, jj] = np.nan
                         med_p[ii, jj] = np.nan
         med_p = np.where(np.isnan(med_p), self.background_median_p, med_p)
@@ -420,9 +438,15 @@ class UniversePlotter():
         levels = []; dens = []
         for density in self.densities:
             try:
-                ts = np.load(self.ts_path + \
-                    'ts_dists_{}year_density_{:.2e}_'.format(self.data_years, density) + \
-                    self.evol_lumi_str + self.steady_str + '.npy')
+                if py_ver == 3:
+                    ts = np.load(self.ts_path + \
+                        'ts_dists_{}year_density_{:.2e}_'.format(self.data_years, density) + \
+                        self.evol_lumi_str + self.steady_str + '.npy',
+                        allow_pickle=True, encoding='latin1')
+                else:    
+                    ts = np.load(self.ts_path + \
+                        'ts_dists_{}year_density_{:.2e}_'.format(self.data_years, density) + \
+                        self.evol_lumi_str + self.steady_str + '.npy')
             except Exception as e:
                 print(e)
                 #continue
@@ -468,8 +492,13 @@ class UniversePlotter():
         plt.subplots_adjust(wspace=0.08)
         for density in self.densities[::4]:
             try:
-                ts = np.load(self.ts_path + 'ts_dists_{}year_density_{:.2e}_'.format(self.data_years, density)
-                                + self.evol_lumi_str + self.steady_str + '.npy')
+                if py_ver == 3:
+                    ts = np.load(self.ts_path + 'ts_dists_{}year_density_{:.2e}_'.format(self.data_years, density)
+                                    + self.evol_lumi_str + self.steady_str + '.npy',
+                                    encoding='latin1', allow_pickle=True)
+                else:
+                    ts = np.load(self.ts_path + 'ts_dists_{}year_density_{:.2e}_'.format(self.data_years, density)
+                                    + self.evol_lumi_str + self.steady_str + '.npy')
             except IOError as e:
                 continue
             ts_bins = np.logspace(-1., 2., 31) if log_ts else np.linspace(0., 15., 31)
@@ -498,7 +527,7 @@ class UniversePlotter():
             return self.background_median_ts
         if self.sigs is None:
             self.sigs = self.load_signalness_array()
-        bg_trials = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/bg/'
+        bg_trials = followup_trials_path + 'bg/'
         TSs = []
         for ind in range(len(skymap_files)):
             if self.transient and self.delta_t == 1000.:
@@ -514,7 +543,11 @@ class UniversePlotter():
                 if self.transient:
                     trials_file = glob(bg_trials + smeared_str 
                                 + 'index_{}_*_time_{:.1f}.pkl'.format(ind, self.delta_t))[0]
-                    trials = np.load(trials_file)
+                    if py_ver == 3:
+                        trials = np.load(trials_file, encoding='latin1', 
+                            allow_pickle=True)
+                    else:
+                        trials = np.load(trials_file)
                     ts = np.random.choice(trials['ts_prior'], size=n_trials)
                 else:
                     try:
@@ -522,7 +555,11 @@ class UniversePlotter():
                                     + 'index_{}_steady_seed_*.pkl'.format(ind))
                         trials = []
                         for f in trials_files:
-                            trials.extend(np.load(f)['TS'])
+                            if py_ver == 3:
+                                trials.extend(np.load(f, encoding='latin1',
+                                    allow_pickle=True)['TS'])
+                            else:
+                                trials.extend(np.load(f)['TS'])
                         ts = np.random.choice(np.array(trials), size=n_trials)
                     except:
                         print("NO STEADY TRIALS FOR INDEX {}".format(ind))
@@ -539,7 +576,7 @@ class UniversePlotter():
     def get_overall_background_p(self, n_trials=5000):
         r'''Sample alert event background distributions
         to get the overall stacked background binomial-p value distribution'''
-        bg_trials = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/bg/'
+        bg_trials = followup_trials_path + 'bg/'
         if self.sigs is None:
             self.sigs = self.load_signalness_array()
         pvals = []
@@ -557,14 +594,22 @@ class UniversePlotter():
                 if self.transient:
                     trials_file = glob(bg_trials + smeared_str 
                                 + 'index_{}_*_time_{:.1f}.pkl'.format(ind, self.delta_t))[0]
-                    trials = np.load(trials_file)
+                    if py_ver == 3:
+                        trials = np.load(trials_file, 
+                            encoding='latin1', allow_pickle=True)
+                    else:
+                        trials = np.load(trials_file)
                     cdf = np.cumsum(np.sort(np.array(trials['ts_prior'])))
                 else:
                     trials_files = glob(bg_trials + smeared_str 
-                                + 'index_{}_steady_seed_*.pkl'.format(ind))
+                                + 'index_{}_*_steady_seed_*.pkl'.format(ind))
                     trials = []
                     for f in trials_files:
-                        trials.extend(np.load(f)['TS'])
+                        if py_ver == 3:
+                            trials.extend(np.load(f, encoding='latin1', 
+                                allow_pickle=True)['TS'])
+                        else:    
+                            trials.extend(np.load(f)['TS'])
                     cdf = np.cumsum(np.sort(np.array(trials)))
                 inds = np.linspace(0., 1., len(cdf))
                 inds = np.where(inds==0., np.min(inds[inds != 0.]), inds)[::-1]
@@ -604,7 +649,12 @@ class UniversePlotter():
         '''
         fmt_path = 'ts_dists_{}year_density_{:.2e}_' + self.evol_lumi_str + \
                         '_manual_lumi_{:.1e}' + self.steady_str + '.npy'
-        trials = np.load(self.ts_path + fmt_path.format(self.data_years, dens, lumi))
+        if py_ver == 3:
+            trials = np.load(self.ts_path + fmt_path.format(
+                self.data_years, dens, lumi), allow_pickle=True,
+                encoding='latin1')
+        else:
+            trials = np.load(self.ts_path + fmt_path.format(self.data_years, dens, lumi))
         trials = trials[0] if in_ts else trials[2]
         unblinded_val = np.random.choice(trials)
         self.inject_and_fit_TS_plot(unblinded_val, in_ts=in_ts, show=False, title=False, upper_limit=upper_limit)
@@ -684,8 +734,13 @@ class UniversePlotter():
                     containment[ii, jj] = 0.
                 else:
                     try:
-                        trials = np.load(self.ts_path \
-                            + fmt_path.format(self.data_years, dens, lumi))
+                        if py_ver == 3:
+                            trials = np.load(self.ts_path \
+                                + fmt_path.format(self.data_years, dens, lumi),
+                                allow_pickle=True, encoding='latin1')
+                        else:
+                            trials = np.load(self.ts_path \
+                                + fmt_path.format(self.data_years, dens, lumi))
                         containment[ii, jj] = sp.stats.percentileofscore(trials[ts_p_ind], obs_val)
                     except IOError as e:
                         containment[ii, jj] = 0.
@@ -703,7 +758,7 @@ class UniversePlotter():
         if self.transient:
             nora_comparison = {}
             for key in ['GRB_lims', 'GRB_diffuse', 'CCSN_lims', 'CCSN_diffuse']:
-                nora_tmp = np.genfromtxt('/data/user/apizzuto/fast_response_skylab/alert_event_followup/effective_areas_alerts/Nora_{}.csv'.format(key),
+                nora_tmp = np.genfromtxt(f_path + 'icecube_misc/effective_areas_alerts/Nora_{}.csv'.format(key),
                                         delimiter=', ')
                 nora_comparison[key] = nora_tmp
             for key in ['GRB_lims']:
@@ -711,16 +766,16 @@ class UniversePlotter():
                 #plt.plot(tmp[0], tmp[1], color = 'grey')
             return tmp[0], tmp[1], 'Multiplets (100 s, 5 yr.)'
         else:
-            ps_pap = np.genfromtxt('/data/user/apizzuto/fast_response_skylab/alert_event_followup/effective_areas_alerts/point_source_paper_lims.csv',
+            ps_pap = np.genfromtxt(f_path + 'icecube_misc/effective_areas_alerts/point_source_paper_lims.csv',
                             delimiter=', ')
-            tmp = np.array(zip(*ps_pap))
+            tmp = np.array(list(zip(*ps_pap)))
             lums = tmp[0] * self.no_evol_energy_density/self.energy_density #testing diff. spectrum, this is an approximation rn
             return np.log10(tmp[1]), np.log10(lums), '8 yr. point source'
 
     def load_signalness_array(self):
         r''' Load the signalness by index list, apply
         appropriate masks depending on which analysis is being run'''
-        sigs_all = np.load('/data/user/apizzuto/fast_response_skylab/alert_event_followup/effective_areas_alerts/sigs_by_ind.npy')
+        sigs_all = np.load(f_path + 'icecube_misc/effective_areas_alerts/sigs_by_ind.npy')
         if self.transient and self.delta_t == 1000.:
             msk_inds = np.array([60, 79, 228])
         elif self.transient:
