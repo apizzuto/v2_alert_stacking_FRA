@@ -22,13 +22,15 @@ The repository is structured as follows:
 * `examples/firesong_based_plots/`
     - After scripts run that use `francis.universe`, create sensitivities to populations of neutrino sources
 
+For instructions on how to run each script, including the command line arguments, please see each respective folder. 
+
 ### Installation
 
 I've provided a `setup.py` file so that the user may either install via pip (`python -m pip install --editable v2_alert_followup`), or you can append the location of the code to your pythonpath to make sure that the imports work properly. Either way you do this, you should then be able to import the scripts from this analysis using e.g. `import francis.time_integrated_scripts`). 
 
 ### Additional software
 * CVMFS: `/cvmfs/icecube.opensciencegrid.org/py3-v4.1.0/setup.sh`
-* The realtime metaproject, which is can be built as a parasitic build off of icerec
+* The realtime metaproject, which is can be built as a parasitic build off of icerec (see instructions on the FRA wiki on how to install this)
 * Skylab
 * [FIRESONG](https://github.com/icecube/FIRESONG)
 * [Fast Response Analysis](https://github.com/icecube/FastResponseAnalysis)
