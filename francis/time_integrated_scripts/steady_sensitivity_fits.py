@@ -17,10 +17,12 @@ import meander
 import sys
 py_ver = int(sys.version[0])
 
-mpl.style.use('/home/apizzuto/Nova/scripts/novae_plots.mplstyle')
+from francis import utils
+f_path = utils.get_francis_path()
+utils.initialize_mpl_style()
+
 alerts = pd.read_csv(
-    '/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/' \
-    + 'francis/icecube_misc/alert_dataframe.csv'
+    f_path + 'icecube_misc/alert_dataframe.csv'
     )
 
 base_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/'

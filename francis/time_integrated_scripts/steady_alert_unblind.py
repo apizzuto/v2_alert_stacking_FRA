@@ -13,6 +13,8 @@ import numpy as np
 import pandas as pd
 
 from francis.time_integrated_scripts.config_steady import config
+from francis import utils
+f_path = utils.get_francis_path()
 
 def unblind_steady_map(
     index, seed, smear=True, local_skymap=False,
@@ -31,7 +33,7 @@ def unblind_steady_map(
     """
 
     smear_str = 'smeared/' if smear else 'norm_prob/'
-    alert_df = pd.read_csv('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/icecube_misc/alert_dataframe.csv')
+    alert_df = pd.read_csv(f_path + 'icecube_misc/alert_dataframe.csv')
     event_id = alert_df.iloc[index]['Event ID']
     run_id = alert_df.iloc[index]['Run ID']
     if not local_skymap:

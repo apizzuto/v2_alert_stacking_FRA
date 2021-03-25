@@ -19,6 +19,9 @@ from   skylab.datasets          import Datasets
 
 from skylab.priors              import SpatialPrior
 
+from francis import utils
+f_path = utils.get_francis_path()
+
 # energy units
 GeV = 1
 TeV = 1000*GeV
@@ -56,8 +59,7 @@ def config(alert_ind, seed = 1, scramble = True, e_range=(0,np.inf), g_range=[1.
     run_id, ev_id = skymap_header['RUNID'], skymap_header['EVENTID']
 
     # Check to make sure there aren't any indexing errors
-    alert_df = pd.read_csv('/data/user/apizzuto/fast_response_skylab/alert' +
-        '_event_followup/FRANCIS/francis/icecube_misc/alert_dataframe.csv')
+    alert_df = pd.read_csv(f_path + 'icecube_misc/alert_dataframe.csv')
     df_entry = alert_df.iloc[alert_ind]
 
     assert df_entry['Run ID'] == run_id, \
@@ -90,7 +92,6 @@ def config(alert_ind, seed = 1, scramble = True, e_range=(0,np.inf), g_range=[1.
     if hp.pixelfunc.get_nside(skymap_fits)!=nside:
         skymap_fits = hp.pixelfunc.ud_grade(skymap_fits,nside)
     skymap_fits = skymap_fits/skymap_fits.sum()
-    #print(hp.pixelfunc.get_nside(skymap_fits))
     spatial_prior = SpatialPrior(skymap_fits, containment=0.99)
 
     llh = [] # store individual llh as lists to prevent pointer over-writing

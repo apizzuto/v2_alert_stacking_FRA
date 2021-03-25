@@ -1,19 +1,23 @@
 import numpy as np
 import scipy as sp
-#from lmfit                import Model
 from scipy.optimize       import curve_fit
 from scipy.stats          import chi2
-import pickle
+import pickle, sys
 from glob import glob
 import matplotlib as mpl
-#mpl.use('Agg')
 import matplotlib.pyplot as plt
-import sys
 import seaborn as sns
-from francis.time_integrated_scripts import steady_sensitivity_fits
 import healpy as hp
 import scipy.stats as st
+
+from francis.time_integrated_scripts import steady_sensitivity_fits
+from francis import utils
+utils.initialize_mpl_style()
+f_path = utils.get_francis_path()
+
 py_version = int(sys.version[0])
+
+trials_base = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/'
  
 palette = ['#7fc97f', '#beaed4', '#fdc086', '#ffff99', '#386cb0', '#f0027f']
 skymap_files = sorted(glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run*.fits.gz'))
@@ -55,7 +59,7 @@ def n_to_flux(N, index, delta_t, smear=True):
         float: Flux in default units returned by skylab injector
     """
     smear_str = 'smeared/' if smear else 'norm_prob/'
-    fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/sensitivity/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
+    fs = glob(trials_base + 'sensitivity/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
     if py_version == 3:
         with open(fs[0], 'rb') as f:
             signal_trials = pickle.load(f, encoding='latin1')
@@ -76,7 +80,7 @@ def dec_of_map(index, smear=True):
         (float, float): RA, Dec of best-fit location from millipede scan
     """
     smear_str = 'smeared/' if smear else 'norm_prob/'
-    fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/sensitivity/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, 1000.0))
+    fs = glob(trials_base + 'sensitivity/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, 1000.0))
     if py_version == 3:
         with open(fs[0], 'rb') as f:
             signal_trials = pickle.load(f, encoding='latin1')
@@ -98,7 +102,7 @@ def background_distribution(index, delta_t, smear=True):
         array: list of TS values
     """
     smear_str = 'smeared/' if smear else 'norm_prob/'
-    fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/bg/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
+    fs = glob(trials_base + 'bg/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
     if py_version == 3:
         with open(fs[0], 'rb') as f:
             bg_trials = pickle.load(f, encoding='latin1')
@@ -120,7 +124,7 @@ def signal_distribution(index, delta_t, ns, smear=True):
         dict: Signal trials
     """
     smear_str = 'smeared/' if smear else 'norm_prob/'
-    fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/sensitivity/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
+    fs = glob(trials_base + 'sensitivity/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
     if py_version == 3:
         with open(fs[0], 'rb') as f:
             signal_trials = pickle.load(f, encoding='latin1')
@@ -154,7 +158,7 @@ def pass_vs_inj(index, delta_t, threshold = 0.5, in_ns = True, with_err = True, 
             and errors
     """
     smear_str = 'smeared/' if smear else 'norm_prob/'
-    fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/bg/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
+    fs = glob(trials_base + 'bg/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
     if py_version == 3:
         with open(fs[0], 'rb') as f:
             bg_trials = pickle.load(f, encoding='latin1')
@@ -162,7 +166,7 @@ def pass_vs_inj(index, delta_t, threshold = 0.5, in_ns = True, with_err = True, 
         with open(fs[0], 'r') as f:
             bg_trials = pickle.load(f)
     bg_trials = bg_trials['ts_prior']
-    fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/sensitivity/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
+    fs = glob(trials_base + 'sensitivity/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
     if py_version == 3:
         with open(fs[0], 'rb') as f:
             signal_trials = pickle.load(f, encoding='latin1')
@@ -170,17 +174,14 @@ def pass_vs_inj(index, delta_t, threshold = 0.5, in_ns = True, with_err = True, 
         with open(fs[0], 'r') as f:
             signal_trials = pickle.load(f)
     bg_thresh = np.percentile(bg_trials, threshold * 100.)
-    #print(bg_thresh)
     signal_fluxes, signal_indices = np.unique(signal_trials['mean_ninj'], return_index=True)
     signal_indices = np.append(signal_indices, len(signal_trials['ts_prior']))
-    #print signal_indices, signal_fluxes
     if trim != -1 and trim < 0:
         signal_indices = signal_indices[:trim]
         signal_fluxes = signal_fluxes[:trim]
     elif trim > 0:
         signal_indices = signal_indices[:trim + 1]
         signal_fluxes = signal_fluxes[:trim]
-    #print signal_trials['ts_prior'], signal_trials['mean_ninj']
     passing = np.array([np.count_nonzero(signal_trials['ts_prior'][li:ri] > bg_thresh) / float(ri - li) for li, ri in zip(signal_indices[:-1], signal_indices[1:])])
     if not with_err:
         return signal_fluxes, passing
@@ -337,7 +338,7 @@ def pvals_for_signal(index, delta_t, ns = 1, sigma_units = False, smear=True):
         array: List of p-values or significances
     """
     smear_str = 'smeared/' if smear else 'norm_prob/'
-    fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/bg/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
+    fs = glob(trials_base + 'bg/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
     if py_version == 3:
         with open(fs[0], 'rb') as f:
             bg_trials = pickle.load(f, encoding='latin1')
@@ -345,7 +346,7 @@ def pvals_for_signal(index, delta_t, ns = 1, sigma_units = False, smear=True):
         with open(fs[0], 'r') as f:
             bg_trials = pickle.load(f)
     bg_trials = bg_trials['ts_prior']
-    fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/sensitivity/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
+    fs = glob(trials_base + 'sensitivity/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
     if py_version == 3:
         with open(fs[0], 'rb') as f:
             signal_trials = pickle.load(f, encoding='latin1')
@@ -414,7 +415,7 @@ def ns_fits_contours(index, delta_t, smear=True, levs = [5., 25., 50., 75., 95.]
     """
     smear_str = 'smeared/' if smear else 'norm_prob/'
     levs = np.array(levs)
-    fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/fits/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
+    fs = glob(trials_base + 'fits/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
     if py_version == 3:
         with open(fs[0], 'rb') as f:
             signal_trials = pickle.load(f, encoding='latin1')
@@ -506,7 +507,7 @@ def background(index, delta_t, smear=True):
         dict: background trials
     """
     smear_str = 'smeared/' if smear else 'norm_prob/'
-    fs = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/bg/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
+    fs = glob(trials_base + 'bg/{}index_{}_*_time_{:.1f}.pkl'.format(smear_str, index, delta_t))
     if py_version == 3:
         with open(fs[0], 'rb') as f:
             bg_trials = pickle.load(f, encoding='latin1')
@@ -595,7 +596,7 @@ def get_true_fit(ind, delta_t, smear=True):
     run = name[:name.find('_')]
     event = name[name.find('_') + 1:]
     smear_str = 'smeared/' if smear else 'norm_prob/'
-    res_f = glob('/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/results/{}*{}*{}_time_window_{:.2e}_results.pickle'.format(smear_str, run, event, delta_t))
+    res_f = glob(trials_base + 'results/{}*{}*{}_time_window_{:.2e}_results.pickle'.format(smear_str, run, event, delta_t))
     res = np.load(res_f[0])
     return res
 

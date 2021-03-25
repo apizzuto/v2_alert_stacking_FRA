@@ -6,6 +6,9 @@ import numpy as np
 import pandas as pd
 
 from francis.time_integrated_scripts.config_steady import config
+from francis import utils
+f_path = utils.get_francis_path()
+
 
 def run_signal_trials(
     gamma, index, ntrials, seed, verbose=True, 
@@ -27,7 +30,7 @@ def run_signal_trials(
     poisson=~fit
     smear_str = 'smeared/' if smear else 'norm_prob/'
     outdir = 'fits' if fit else 'sensitivity'
-    alert_df = pd.read_csv('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/francis/icecube_misc/alert_dataframe.csv')
+    alert_df = pd.read_csv(f_path + 'icecube_misc/alert_dataframe.csv')
     event_id = alert_df.iloc[index]['Event ID']
     run_id = alert_df.iloc[index]['Run ID']
     outfile = '/data/user/apizzuto/fast_response_skylab/' \
