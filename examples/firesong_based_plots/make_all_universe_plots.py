@@ -8,6 +8,8 @@ from francis import utils
 utils.initialize_mpl_style()
 import matplotlib as mpl
 
+f_path = utils.get_francis_path()
+
 def make_analysis_plots(uni):
     """
     Call all relevant class methods to create
@@ -24,7 +26,8 @@ def make_analysis_plots(uni):
         uni.plot_background_binomial_p()
         uni.brazil_bands(compare=compare)
         uni.brazil_bands(rotated=True, compare=compare)
-        uni.one_dim_ts_distributions(in_ts = False)
+        if not uni.transient:
+            uni.one_dim_ts_distributions(in_ts = False)
     except:
         print("\t\tUNABLE TO MAKE ONE OR MORE PLOTS")
         print("\t\t(likely one dim transient dist)")
@@ -57,8 +60,7 @@ if __name__ == "__main__":
             print('\tTime window: {:.2e} seconds'.format(time_window))
         delta_t = None if time_window == 'steady' else time_window
         fig_subdir = 'steady/' if time_window == 'steady' else 'transient/'
-        savepath = '/data/user/apizzuto/fast_response_skylab/' + \
-            'alert_event_followup/FRANCIS/figures/' + fig_subdir
+        savepath = f_path + '../figures/' + fig_subdir
         uni = UniversePlotter(
             delta_t, args.data_years, args.lumi, args.evol, save=True, 
             savepath=savepath,

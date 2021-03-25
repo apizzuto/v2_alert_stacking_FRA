@@ -8,9 +8,11 @@ from matplotlib.lines import Line2D
 import pickle
 
 import francis.sensitivity_fit_functions as sff
+from francis import utils
+utils.initialize_mpl_style()
+f_path = utils.get_francis_path
 
-savepath = '/data/user/apizzuto/fast_response_skylab/' + \
-    'alert_event_followup/FRANCIS/figures/followup_plots/transient/'
+savepath = f_path + '../figures/followup_plots/transient/'
 
 ###############################################################################
 ##########              Load plotting parameters              #################
@@ -18,7 +20,7 @@ savepath = '/data/user/apizzuto/fast_response_skylab/' + \
 import seaborn as sns
 palette = ['#7fc97f', '#beaed4', '#fdc086', '#ffff99', '#386cb0', '#f0027f']
 
-mpl.style.use('/home/apizzuto/Nova/scripts/novae_plots.mplstyle')
+utils.initialize_mpl_style()
 mpl.rcParams['axes.linewidth'] = 2.
 mpl.rcParams['figure.dpi'] = 120
 
@@ -29,7 +31,6 @@ disc_cols = [sns.xkcd_rgb['light navy blue'], sns.xkcd_rgb['lighter green'], sns
 ##########              Sensitivity vs. declination           #################
 ###############################################################################
 
-#delta_ts = np.array([1000., 2*86400., 86400*31.])
 delta_ts = np.array([1000., 2*86400.])
 sensitivities = np.zeros((2, 276))
 discoveries = np.zeros((2, 276))
@@ -40,7 +41,7 @@ for jj, delta_t in enumerate(delta_ts):
     sensitivities[jj], discoveries[jj] = sff.find_all_sens(delta_t, smear=True, disc_conf=0.5,
                                                         disc_thresh=1.-0.0013, verbose=False)
 
-decs_by_ind = np.load('/data/user/apizzuto/fast_response_skylab/alert_event_followup/effective_areas_alerts/decs_by_ind.npy')[1]
+decs_by_ind = np.load(f_path + 'icecube_misc/effective_areas_alerts/decs_by_ind.npy')[1]
 time_labels = [r'$10^3$ s', '2 days']
 time_integrated = {'sens': [], 'disc': [], 'sinDec': []}
 sinDecs = np.linspace(-0.95, 0.95, 39)
@@ -69,7 +70,6 @@ for ii, delta_t in enumerate(delta_ts[:]):
         fig.set_facecolor('white')
         with open('/data/user/apizzuto/fast_response_skylab/dump/ideal_ps_sensitivity_deltaT_{:.2e}_50CL.pkl'.format(delta_t / 86400.), 'rb') as f:
             ideal = pickle.load(f, encoding='latin1')
-        #msk = np.sin(decs_by_ind[1]) > -0.05
         msk = sensitivities[ii]*delta_t*1e6 < 1e2
         if delta_t == 1000.:
             bad_ind_msk = np.array([x not in [92, 95, 198] for x in np.linspace(0, 275, 276)])
@@ -92,14 +92,13 @@ for ii, delta_t in enumerate(delta_ts[:]):
 
         plt.grid(which='both', alpha=0.2, zorder=1)
         plt.yscale('log')
-        plt.legend(loc=1, ncol=1, frameon=True, fontsize=14) #columnspacing=0.6, frameon=False)
-        #plt.loglog()
+        plt.legend(loc=1, ncol=1, frameon=True, fontsize=14)
         plt.xlabel(r'$\sin \delta$')
         plt.title(r'$\Delta T = $' + time_labels[ii])
         plt.ylabel(r'$E^2 \frac{dN_{\nu+\bar{\nu}}}{dEdA} \Big|_{\mathrm{1 TeV}}$ (GeV cm$^{-2}$)')
         plt.ylim(3e-2, 3e2)
         plt.text(0.03, 1e0, '10 yr. time-integrated', color = sns.xkcd_rgb['light grey'])
-        #plt.xlim(5e0, 1.5e7)
+        
     except Exception as e:
         print(e)
         pass
@@ -114,12 +113,9 @@ bins = np.linspace(0., 20., 21)
 
 bg = np.array(sff.background_distribution(5, 2.*86400., smear=True))
 plt.hist(bg, bins=bins, histtype='step', lw=2., label='With systematics')
-#bg = np.array(background_distribution(3, 2.*86400, smear=False))
-#plt.hist(bg, bins=bins, histtype='step', lw=2., label = 'Without systematics')
 plt.yscale('log')
 plt.xlabel('TS')
 plt.ylabel('$N$')
-#plt.legend()
 plt.title(r'$\Delta T = 2$ days')
 plt.savefig(savepath + 'FRA_alert_event_background_trials_sample.png', 
                bbox_inches='tight', dpi=200)
@@ -142,8 +138,6 @@ for delta_t in np.array([1000., 2.*86400.]):
         try:
             bg = np.array(sff.background_distribution(ind, delta_t, smear=True))
             axs[ind].hist(bg, bins=bins, histtype='step', lw=2.)
-            #bg = np.array(background_distribution(ind, delta_t, smear=False))
-            #axs[ind].hist(bg, bins=bins, histtype='step', lw=2.)
             axs[ind].set_yscale('log')
             axs[ind].set_ylim(0.8e0, 2e4)
             if ind / 12 == 22:
@@ -220,7 +214,7 @@ for delta_t, delta_t_str in zip([1000., 172800.],
 ##########              Sensitivity curve plots                  ##############
 ###############################################################################
 
-for delta_t in [1e3, 2.*86400.]:#np.append(np.logspace(1., 7., 7), np.array([2.*86400., 31.*86400.])):
+for delta_t in [1e3, 2.*86400.]:
     fig, aaxs = plt.subplots(ncols=12, nrows=23, figsize=(17,35), 
                             sharey=True)
     used_axs = []
@@ -241,7 +235,7 @@ for delta_t in [1e3, 2.*86400.]:#np.append(np.logspace(1., 7., 7), np.array([2.*
                bbox_inches='tight', dpi=200)
     plt.close()
 
-for delta_t in [1e3, 2.*86400.]:#np.append(np.logspace(1., 7., 7), np.array([2.*86400., 31.*86400.])):
+for delta_t in [1e3, 2.*86400.]:
     fig, aaxs = plt.subplots(ncols=12, nrows=23, figsize=(17,35), 
                             sharey=True)
     used_axs = []

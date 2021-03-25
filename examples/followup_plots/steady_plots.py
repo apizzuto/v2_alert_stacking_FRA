@@ -1,57 +1,25 @@
 from francis.time_integrated_scripts import steady_sensitivity_fits as ssf
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-mpl.style.use('/home/apizzuto/Nova/scripts/novae_plots.mplstyle')
 import pandas as pd
 
-alerts = pd.read_csv(
-    '/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/' \
-    + 'francis/icecube_misc/alert_dataframe.csv'
-    )
+from francis import utils
+utils.initialize_mpl_style()
+f_path = utils.get_francis_path()
 
-##############################################################################
-##########################  This makes all of the skymaps #############
-##############################################################################
-alerts_already_made = True
-if not alerts_already_made:
-    output_dir = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/alert_skymaps/'
-    for ind in range(276):
-        if ind % 25 == 0:
-            print(ind, end=' ')
-        run_id = str(alerts['Run ID'][ind])
-        event_id = str(alerts['Event ID'][ind])
-        
-        if run_id == '123986':
-            print(str(ind) + ' is a bad ind')
-            continue
-        elif run_id == '129434':
-            print(str(ind) + ' is a bad ind')
-            continue
-        elif run_id == '133781':
-            print(str(ind) + ' is a bad ind')
-            continue
-        base_str = f'{output_dir}Run_{run_id}_Event_{event_id}'
-        
-        ssf.plot_skymap(ind, LLH=True)
-        plt.savefig(base_str + '_allsky.png', dpi=120, bbox_inches='tight')
-        plt.close()
-        
-        ssf.plot_zoom(ind, LLH=True)
-        plt.savefig(base_str + '_zoom_LLH.png', dpi=120, bbox_inches='tight')
-        plt.close()
-        
-        ssf.plot_zoom(ind, LLH=False)
-        plt.savefig(base_str + '_probs.png', dpi=120, bbox_inches='tight')
-        plt.close()
+alerts = pd.read_csv(
+    f_path + 'icecube_misc/alert_dataframe.csv'
+    )
 
 ##############################################################################
 #############  For each alert, make a few summary plots          #############
 ##############################################################################
-output_dir = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/' \
-    + 'time_integrated_summary_plots/'
+output_dir = f_path + '../figures/followup_plots/steady/time_integrated_summary_plots/'
 
 # Make all of the summary plots. This takes a looooooong time (O(hours))
-for ind in range(len(alerts)):
+just_make_one = True
+inds = [0] if just_make_one else list(range(len(alerts)))
+for ind in inds:
     if ind % 50 == 0:
         print(ind, end=' ')
     try:
@@ -125,7 +93,7 @@ for ii in range(276):
 for k in alert_sens.keys():
     alert_sens[k] = np.array(alert_sens[k])
 
-mpl.style.use('/home/apizzuto/Nova/scripts/novae_plots.mplstyle')
+utils.initialize_mpl_style()
 sens_cols = [sns.xkcd_rgb['navy blue'], sns.xkcd_rgb['navy green'], sns.xkcd_rgb['deep magenta']]
 ii=2
 try:
@@ -165,5 +133,5 @@ try:
 except Exception as e:
     print(e)
     pass
-plt.savefig('/data/user/apizzuto/fast_response_skylab/alert_event_followup/FRANCIS/figures/followup_plots/steady/alert_event_sens_vs_dec_steady_smeared.png', 
+plt.savefig(f_path + '../figures/followup_plots/steady/alert_event_sens_vs_dec_steady_smeared.png', 
                bbox_inches='tight', dpi=200)
