@@ -28,6 +28,8 @@ For instructions on how to run each script, including the command line arguments
 
 I've provided a `setup.py` file so that the user may either install via pip (`python -m pip install --editable v2_alert_followup`), or you can append the location of the code to your pythonpath to make sure that the imports work properly. Either way you do this, you should then be able to import the scripts from this analysis using e.g. `import francis.time_integrated_scripts`). 
 
+Interested in running the code but not sure where to start? See `tutorial.md` for a complete walkthrough.
+
 ### Additional software
 * CVMFS: `/cvmfs/icecube.opensciencegrid.org/py3-v4.1.0/setup.sh`
 * The realtime metaproject, which is can be built as a parasitic build off of icerec (see instructions on the FRA wiki on how to install this)
