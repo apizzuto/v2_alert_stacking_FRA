@@ -54,7 +54,7 @@ for delta_t in [1000., 2.*86400.]:
                     elif density * manual_lumi * delta_t < 1e47:
                         continue
                     else:
-                        N = 500 if density < 1e-7 else 40
+                        N = 500 if density < 1e-7 else 150
                         if density > 3e-8:
                             high_mem_job.add_arg('--delta_t={} --density={} --LF={} --n={} --evol={} --manual_lumi={}'.format(delta_t, density, lumi, N, evol, manual_lumi))
                         else:

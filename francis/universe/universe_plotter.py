@@ -762,7 +762,7 @@ class UniversePlotter():
                                         delimiter=', ')
                 nora_comparison[key] = nora_tmp
             for key in ['GRB_lims']:
-                tmp = np.log10(zip(*nora_comparison[key]))
+                tmp = np.log10(np.array(list(zip(*nora_comparison[key]))))
                 #plt.plot(tmp[0], tmp[1], color = 'grey')
             return tmp[0], tmp[1], 'Multiplets (100 s, 5 yr.)'
         else:
