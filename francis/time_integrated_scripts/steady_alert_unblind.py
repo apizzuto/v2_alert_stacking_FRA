@@ -8,7 +8,7 @@ information about each trial to outfile
     --i index: alert event index
     --ntrials: number of trials to perform
 '''
-import time, pickle, argparse
+import time, pickle, argparse, os
 import numpy as np 
 import pandas as pd
 
@@ -31,18 +31,26 @@ def unblind_steady_map(
         local_skymap (bool, default=False): return the local TS landscape
             vs. ra and dec or just the trials at the best-fit
     """
-
+    
     smear_str = 'smeared/' if smear else 'norm_prob/'
     alert_df = pd.read_csv(f_path + 'icecube_misc/alert_dataframe.csv')
     event_id = alert_df.iloc[index]['Event ID']
     run_id = alert_df.iloc[index]['Run ID']
+    # Commented path is the original trials location
+    # base_trial_path = '/data/user/apizzuto/fast_response_skylab/' \
+    #     + 'alert_event_followup/analysis_trials/'
+    base_trial_path = os.path.join(os.path.expandvars("$PWD"), "analysis_trials/")
+    if not os.path.exists(base_trial_path):
+        os.mkdir(base_trial_path)
+    if not os.path.exists(base_trial_path + 'results/'):
+        os.mkdir(base_trial_path + 'results/')
+    if not os.path.exists(base_trial_path + 'results/' + smear_str):
+        os.mkdir(base_trial_path + 'results/' + smear_str)
     if not local_skymap:
-        outfile = '/data/user/apizzuto/fast_response_skylab/' \
-            + 'alert_event_followup/analysis_trials/results/' \
+        outfile = base_trial_path + 'results/' \
             + '{}index_{}_run_{}_event_{}_steady_seed_{}.pkl'.format(smear_str, index, run_id, event_id, seed)
     else:
-        outfile = '/data/user/apizzuto/fast_response_skylab/' \
-        + 'alert_event_followup/analysis_trials/results/' \
+        outfile = base_trial_path + 'results/' \
         + '{}index_{}_run_{}_event_{}_steady_ts_map_seed_{}.pkl'.format(
             smear_str, index, run_id, event_id, seed
             )
@@ -101,7 +109,7 @@ def unblind_steady_map(
             dt1, (dt-dt1)
             ))
 
-    with open(outfile, 'w') as f:
+    with open(outfile, 'wb') as f:
         pickle.dump(allspots, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 
@@ -120,8 +128,8 @@ if __name__ == "__main__":
         '--rng', type=int, default=1, help="Random number seed"
         )
     parser.add_argument(
-        '--smear', default=False, action='store_true',
-        help='Include systematics by smearing norm. prob.'
+        '--no-smear', default=False, action='store_true',
+        help='Do not include systematics, instead directly convert LLH to norm. prob.'
         )
     parser.add_argument(
         '--local_skymap', default=False, action='store_true',
@@ -130,6 +138,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     unblind_steady_map(
-        args.i, args.rng, smear=args.smear, local_skymap=args.local_skymap,
+        args.i, args.rng, smear=not args.no_smear, local_skymap=args.local_skymap,
         verbose=args.verbose
         )

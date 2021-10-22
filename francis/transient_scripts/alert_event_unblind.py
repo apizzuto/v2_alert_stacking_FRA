@@ -16,11 +16,18 @@ parser.add_argument('--index', type=int,default=None,
                     help='skymap index')
 parser.add_argument('--deltaT', type=float, default=None,
                     help='Time Window in seconds')
-parser.add_argument('--smear', default=False, action='store_true',
-                    help='Include systematics by smearing norm. prob.')
+parser.add_argument('--no-smear', default=False, action='store_true',
+                    help='Do not include systematics, instead directly convert LLH to norm. prob.')
 args = parser.parse_args()
 
-output_paths = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/results/'
+# Commented path is the original trials location
+# output_paths = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/results/'
+output_base = os.path.join(os.path.expandvars("$PWD"), "analysis_trials/")
+if not os.path.exists(output_base):
+    os.mkdir(output_base)
+output_paths = output_base + 'results/'
+if not os.path.exists(output_paths):
+    os.mkdir(output_paths)
 
 skymap_files = sorted(glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run1*.fits.gz'))
 skymap_fits, skymap_header = hp.read_map(skymap_files[args.index], h=True, verbose=False)
@@ -40,9 +47,10 @@ start = Time(start_mjd, format='mjd').iso
 stop = Time(stop_mjd, format='mjd').iso
 
 f = FastResponseAnalysis(skymap_files[args.index], start, stop, save=False, 
-                            alert_event=True, smear=args.smear, **source)
+                            alert_event=True, smear=not args.no_smear, **source)
 inj = f.initialize_injector(gamma=2.5) #just put this here to initialize f.spatial_prior
 ts = f.unblind_TS()
-smear_str = 'smeared/' if args.smear else 'norm_prob/'
+smear_str = 'smeared/' if not args.no_smear else 'norm_prob/'
+if not os.path.exists(output_paths + smear_str):
+    os.mkdir(output_paths + smear_str)
 res = f.save_results(alt_path = output_paths + smear_str)
-

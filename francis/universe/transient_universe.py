@@ -41,8 +41,8 @@ class Universe():
         for sample in ['HESE', 'GFU']:
                 for cut, level in [('gold', 'tight'), ('bronze', 'loose')]:
                     N = self.rng.poisson(lam = bg_rates[sample + '_' + cut]*self.data_years)
-                    sigs = sample_signalness(cut=level, stream='background', size=N)
-                    decs = sample_declination(cut=cut, size=N)
+                    sigs = sample_signalness(cut=level, stream='background', size=N, rng=self.rng)
+                    decs = sample_declination(cut=cut, size=N, rng=self.rng)
                     skymap_inds, skymap_decs = self.sample_skymap(decs)
                     bg_alerts[sample + '_' + cut] = (N, sigs, decs, skymap_inds, skymap_decs)
         self.bg_alerts = bg_alerts
@@ -81,7 +81,7 @@ class Universe():
             for cut, lev in [('gold', 'tight'), ('bronze', 'loose')]:
                 nexps = np.array(self.n_per_dec[stream + '_' + cut])[self.sources['dec_bands'].astype(int)] * self.sources['flux']
                 Ns = self.rng.poisson(lam=nexps)
-                sigs = [0 if n == 0 else sample_signalness(cut=lev, stream='signal', size=n) for n in Ns]
+                sigs = [0 if n == 0 else sample_signalness(cut=lev, stream='signal', size=n, rng=self.rng) for n in Ns]
                 non_zero_inds = np.where(Ns != 0)[0]
                 for ind in non_zero_inds:
                     sig_alerts[stream + '_' + cut][ind] = (Ns[ind], sigs[ind], nexps[ind])
@@ -124,7 +124,7 @@ class Universe():
                 elif self.timescale == 172800.:
                     problem_inds = [198]
                 else:
-                    problem_inds = [73,  76, 142, 147, 157, 198, 250]
+                    problem_inds = [73,  76, 142, 147, 157, 198, 249]
                 while idx in problem_inds:
                     idx = find_nearest_ind(self.map_decs, dec)
                 sample_dec = self.map_decs[idx]
@@ -138,7 +138,7 @@ class Universe():
                 elif self.timescale == 172800:
                     problem_inds = [198]
                 else:
-                    problem_inds = [73,  76, 142, 147, 157, 198, 250]
+                    problem_inds = [73,  76, 142, 147, 157, 198, 249]
                 while idx in problem_inds:
                     idx = self.rng.choice(nearby_inds)
                 sample_dec = self.map_decs[idx]
@@ -211,6 +211,7 @@ class SteadyUniverse(Universe):
         self.timescale = self.data_years * 365. * 86400.
         self.dataset_integration_time = 8.607 * 365. * 86400. #YEARS OF DATA MAY NOT BE YEARS OF ALERTS
                                                                 #8.607 from GFUOnline_v01p02 2011-2018 + 2019
+        self.sigma = kwargs.pop('sigma', 1.0)
 
     def universe_firesong(self):
         return firesong_simulation('', filename=None, density=self.density, 
@@ -218,7 +219,7 @@ class SteadyUniverse(Universe):
             fluxnorm = self.diffuse_flux_norm,
             index=self.diffuse_flux_ind, LF = self.lumi, 
             luminosity=self.manual_lumi, seed=self.seed,
-            verbose=False)
+            verbose=False, sigma=self.sigma)
 
     def create_universe(self):
         r'''
@@ -291,6 +292,7 @@ class TransientUniverse(Universe):
         self.manual_lumi = kwargs.pop('manual_lumi', 0.0)
         self.seed = kwargs.pop('seed', None)
         self.rng = np.random.RandomState(self.seed)
+        self.sigma = kwargs.pop('sigma', 1.0)
 
     def universe_firesong(self):
         return firesong_simulation('', filename=None, density=self.density, 
@@ -298,7 +300,7 @@ class TransientUniverse(Universe):
             timescale=self.timescale, fluxnorm = self.diffuse_flux_norm,
             index=self.diffuse_flux_ind, LF = self.lumi, 
             luminosity=self.manual_lumi, seed=self.seed,
-            verbose=False)
+            verbose=False, sigma=self.sigma)
 
     def create_universe(self):
         r'''
@@ -348,16 +350,22 @@ def load_sig(cut = 'tight', stream = 'astro_numu'):
     heights = np.maximum(heights, [0.0]*len(heights))
     return sigs, heights
 
-def sample_from_hist(centers, heights, size = 1):
+def sample_from_hist(centers, heights, size = 1, rng=None):
     r'''Given a histogram, sample from it, assuming
     uniform distributions within a bin'''
     cdf = np.cumsum(heights)
     cdf = cdf / cdf[-1]
-    values = np.random.rand(size)
+    if rng is None:
+        values = np.random.rand(size)
+    else:
+        values = rng.rand(size)
     value_bins = np.searchsorted(cdf, values)
     random_from_cdf = centers[value_bins]
     width = np.average(np.diff(centers))
-    wiggle = np.random.uniform(low=- width / 2., high=width / 2., size=size)
+    if rng is None:
+        wiggle = np.random.uniform(low=- width / 2., high=width / 2., size=size)
+    else:
+        wiggle = rng.uniform(low=- width / 2., high=width / 2., size=size)
     random_from_cdf += wiggle
     return random_from_cdf
 
@@ -385,12 +393,12 @@ def load_dec_dist(cut = 'gold'):
     heights = np.maximum(heights, [0.0]*len(heights))
     return decs, heights
 
-def sample_declination(cut = 'gold', size = 1):
+def sample_declination(cut = 'gold', size = 1, rng=None):
     sh = load_dec_dist(cut = cut)
-    decs = sample_from_hist(sh[0], sh[1], size=size)
+    decs = sample_from_hist(sh[0], sh[1], size=size, rng=rng)
     return decs
 
-def sample_signalness(stream='astro_numu', cut='tight', size = 1):
+def sample_signalness(stream='astro_numu', cut='tight', size = 1, rng=None):
     r'''Load and sample from signalness distributions for various
     event streams'''
     if stream in ['astro_numu', 'conv_numu', 'conv_mu']:
@@ -414,7 +422,7 @@ def sample_signalness(stream='astro_numu', cut='tight', size = 1):
     else:
         print("Invalid stream name. Later, hater")
         return None
-    sigs = sample_from_hist(sh[0], sh[1], size = size)
+    sigs = sample_from_hist(sh[0], sh[1], size = size, rng=rng)
     return sigs
 
 def load_alert_effA(stream = 'HESE', level='bronze'):

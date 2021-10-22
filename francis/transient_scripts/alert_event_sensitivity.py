@@ -19,11 +19,18 @@ parser.add_argument('--deltaT', type=float, default=None,
                     help='Time Window in seconds')
 parser.add_argument('--ntrials', type=int, default = 100,
                         help='Trials per injection strength')
-parser.add_argument('--smear', default=False, action='store_true',
-                    help='Include systematics by smearing norm. prob.')
+parser.add_argument('--no-smear', default=False, action='store_true',
+                    help='Do not include systematics, instead directly convert LLH to norm. prob.')
 args = parser.parse_args()
 
-output_paths = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/sensitivity/'
+# Commented path is the original trials location
+# output_paths = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/sensitivity/'
+output_base = os.path.join(os.path.expandvars("$PWD"), "analysis_trials/")
+if not os.path.exists(output_base):
+    os.mkdir(output_base)
+output_paths = output_base + 'sensitivity/'
+if not os.path.exists(output_paths):
+    os.mkdir(output_paths)
 
 skymap_files = sorted(glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run1*.fits.gz'))
 skymap_fits, skymap_header = hp.read_map(skymap_files[args.index], h=True, verbose=False)
@@ -62,7 +69,7 @@ seed_counter = 0
 
 for gamma in gammas:
     f = FastResponseAnalysis(skymap_files[args.index], start, stop, save=False, 
-                        alert_event=True, smear=args.smear, alert_type='track')
+                        alert_event=True, smear=not args.no_smear, alert_type='track')
     inj = f.initialize_injector(gamma=gamma)
     scale_arr = []
     step_size = 10
@@ -119,6 +126,8 @@ results = {'ts_prior': tsList_prior, 'ts': tsList, 'ns_prior': nsList_prior,
             'gamma': gammaList, 'mean_ninj': mean_ninj, 'flux': flux_list,
             'true_ra': true_ras, 'true_dec': true_decs}
 
-smear_str = 'smeared/' if args.smear else 'norm_prob/'
+smear_str = 'smeared/' if not args.no_smear else 'norm_prob/'
+if not os.path.exists(output_paths + smear_str):
+    os.mkdir(output_paths + smear_str)
 with open(output_paths + smear_str + 'index_{}_run_{}_event_{}_time_{}.pkl'.format(args.index, run_id, event_id, args.deltaT), 'wb') as fi:
     pickle.dump(results, fi, protocol=pickle.HIGHEST_PROTOCOL)

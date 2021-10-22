@@ -71,6 +71,10 @@ class UniversePlotter():
         self.background_median_ts = None
         self.background_median_p = None
         self.smeared = kwargs.pop('smeared', True)
+        if self.lumi == 'LG':
+            self.sigma = kwargs.pop('sigma', 0.4)
+        else:
+            self.sigma = None
         self.ts_fills = [self.background_median_ts, 50.] if self.transient else [self.background_median_ts, 10.]
         self.lumi_str = {'SC': 'Standard Candle', 'LG': 'Log Normal'}[self.lumi]
         self.evol_str = {'HB2006SFR': 'Hopkins and Beacom 2006 SFR',
@@ -82,7 +86,10 @@ class UniversePlotter():
         self.energy_density = energy_density[key][evol]
         self.no_evol_energy_density = energy_density[key]['NoEvolution']
         self.energy_density_uncertainty = energy_density_uncertainty[key][evol]
-        self.evol_lumi_str = 'evol_{}_lumi_{}'.format(self.evol, self.lumi)
+        if self.lumi == 'SC':
+            self.evol_lumi_str = 'evol_{}_lumi_{}'.format(self.evol, self.lumi)
+        else:
+            self.evol_lumi_str = 'evol_{}_lumi_{}_sigma_{:.2f}'.format(self.evol, self.lumi, self.sigma)
         self.densities = np.logspace(-11., -6., 21)
         self.luminosities = np.logspace(49, 62, 53) if self.transient else np.logspace(49., 56., 29)
         if self.transient:
@@ -94,6 +101,8 @@ class UniversePlotter():
         self.med_p = None
         self.get_labels()
         self.sigs = None
+        self.seed = kwargs.pop('seed', 1)
+        self.rng = np.random.RandomState(self.seed)
         self.save_figs = kwargs.pop('save', False)
         if self.save_figs:
             self.savepath = kwargs.pop('savepath', './')
@@ -361,7 +370,7 @@ class UniversePlotter():
         and extract relevant TS values from distributions
         after trials simulating the parameter space have been run'''
         fmt_path = 'ts_dists_{}year_density_{:.2e}_' + self.evol_lumi_str + \
-                        '_manual_lumi_{:.1e}' + self.steady_str + '.npy'
+                        '_manual_lumi_{:.1e}' + self.steady_str + '*.npy'
         shape = (self.luminosities.size, self.densities.size)             
         med_TS = np.zeros(shape); lower_10 = np.zeros(shape)
         for ii, lumi in enumerate(self.luminosities):
@@ -376,12 +385,39 @@ class UniversePlotter():
                 else:
                     try:
                         if py_ver == 3:
-                            trials = np.load(self.ts_path \
-                                + fmt_path.format(self.data_years, dens, lumi),
-                                allow_pickle=True, encoding='latin1')
+                            trials_fs = glob(self.ts_path \
+                                + fmt_path.format(self.data_years, dens, lumi)
+                                )
+                            if len(trials_fs) == 0:
+                                raise IOError
+                            trials = None
+                            for f in trials_fs:
+                                if trials is None:
+                                    trials = np.load(
+                                        f, 
+                                        allow_pickle=True, 
+                                        encoding='latin1'
+                                        )
+                                else:
+                                    tmp = np.load(
+                                        f,
+                                        allow_pickle=True,
+                                        encoding='latin1'
+                                        )
+                                    trials = np.hstack([trials, tmp])
                         else:
-                            trials = np.load(self.ts_path \
-                                + fmt_path.format(self.data_years, dens, lumi))
+                            trials_fs = glob(self.ts_path \
+                                + fmt_path.format(self.data_years, dens, lumi)
+                                )
+                            if len(trials_fs) == 0:
+                                raise IOError
+                            trials = None
+                            for f in trials_fs:
+                                if trials is None:
+                                    trials = np.load(f)
+                                else:
+                                    tmp = np.load(f)
+                                    trials = np.hstack([trials, tmp])
                         lower_10[ii, jj] = np.percentile(trials[0], 10.)
                         med_TS[ii, jj] = np.median(trials[0])
                     except IOError as e:
@@ -397,27 +433,55 @@ class UniversePlotter():
         and extract relevant Binomial-p values values from distributions
         after trials simulating the parameter space have been run'''
         fmt_path = 'ts_dists_{}year_density_{:.2e}_' + self.evol_lumi_str + \
-                        '_manual_lumi_{:.1e}' + self.steady_str + '.npy'
+                        '_manual_lumi_{:.1e}' + self.steady_str + '*.npy'
         shape = (self.luminosities.size, self.densities.size)             
         med_p = np.zeros(shape); lower_10_p = np.zeros(shape)
         for ii, lumi in enumerate(self.luminosities):
             for jj, dens in enumerate(self.densities):
                 test_en = lumi*dens*self.delta_t if self.transient else lumi*dens
-                if test_en > self.energy_density*3.:
-                    lower_10_p[ii, jj] = 1e-10
-                    med_p[ii, jj] = 1e-10
+                comp_test_en = self.energy_density*10.2 if self.transient else self.energy_density*100.
+                if test_en > comp_test_en:
+                    lower_10_p[ii, jj] = 1e-100
+                    med_p[ii, jj] = 1e-100
                 elif test_en < self.energy_density*3e-3:
                     lower_10_p[ii, jj] = self.background_lower_10_p
                     med_p[ii, jj] = self.background_median_p
                 else:
                     try:
                         if py_ver == 3:
-                            trials = np.load(self.ts_path \
-                                + fmt_path.format(self.data_years, dens, lumi),
-                                allow_pickle=True, encoding='latin1')
+                            trials_fs = glob(self.ts_path \
+                                + fmt_path.format(self.data_years, dens, lumi)
+                                )
+                            if len(trials_fs) == 0:
+                                raise IOError
+                            trials = None
+                            for f in trials_fs:
+                                if trials is None:
+                                    trials = np.load(
+                                        f, 
+                                        allow_pickle=True, 
+                                        encoding='latin1'
+                                        )
+                                else:
+                                    tmp = np.load(
+                                        f,
+                                        allow_pickle=True,
+                                        encoding='latin1'
+                                        )
+                                    trials = np.hstack([trials, tmp])
                         else:
-                            trials = np.load(self.ts_path \
-                                + fmt_path.format(self.data_years, dens, lumi))
+                            trials_fs = glob(self.ts_path \
+                                + fmt_path.format(self.data_years, dens, lumi)
+                                )
+                            if len(trials_fs) == 0:
+                                raise IOError
+                            trials = None
+                            for f in trials_fs:
+                                if trials is None:
+                                    trials = np.load(f)
+                                else:
+                                    tmp = np.load(f)
+                                    trials = np.hstack([trials, tmp])
                         lower_10_p[ii, jj] = np.percentile(trials[2], 90.)
                         med_p[ii, jj] = np.median(trials[2])
                     except IOError as e:
@@ -439,14 +503,45 @@ class UniversePlotter():
         for density in self.densities:
             try:
                 if py_ver == 3:
-                    ts = np.load(self.ts_path + \
-                        'ts_dists_{}year_density_{:.2e}_'.format(self.data_years, density) + \
-                        self.evol_lumi_str + self.steady_str + '.npy',
-                        allow_pickle=True, encoding='latin1')
-                else:    
-                    ts = np.load(self.ts_path + \
-                        'ts_dists_{}year_density_{:.2e}_'.format(self.data_years, density) + \
-                        self.evol_lumi_str + self.steady_str + '.npy')
+                    ts_fs = glob(
+                        self.ts_path + \
+                        'ts_dists_{}year_density_{:.2e}_'.format(
+                            self.data_years, density) + \
+                        self.evol_lumi_str + self.steady_str + '*.npy'
+                        )
+                    if len(ts_fs) == 0:
+                        raise Exception
+                    ts = None
+                    for f in ts_fs:
+                        if ts is None:
+                            ts = np.load(
+                                f, 
+                                allow_pickle=True, 
+                                encoding='latin1'
+                                )
+                        else:
+                            tmp = np.load(
+                                f,
+                                allow_pickle=True,
+                                encoding='latin1'
+                                )
+                            ts = np.hstack([ts, tmp])
+                else:
+                    ts_fs = glob(
+                        self.ts_path + \
+                        'ts_dists_{}year_density_{:.2e}_'.format(
+                            self.data_years, density) + \
+                        self.evol_lumi_str + self.steady_str + '*.npy'
+                        )
+                    if len(ts_fs) == 0:
+                        raise Exception
+                    ts = None
+                    for f in ts_fs:
+                        if ts is None:
+                            ts = np.load(f)
+                        else:
+                            tmp = np.load(f)
+                            ts = np.hstack([ts, tmp])
             except Exception as e:
                 print(e)
                 #continue
@@ -493,12 +588,45 @@ class UniversePlotter():
         for density in self.densities[::4]:
             try:
                 if py_ver == 3:
-                    ts = np.load(self.ts_path + 'ts_dists_{}year_density_{:.2e}_'.format(self.data_years, density)
-                                    + self.evol_lumi_str + self.steady_str + '.npy',
-                                    encoding='latin1', allow_pickle=True)
+                    ts_fs = glob(
+                        self.ts_path + \
+                        'ts_dists_{}year_density_{:.2e}_'.format(
+                            self.data_years, density) + \
+                        self.evol_lumi_str + self.steady_str + '*.npy'
+                        )
+                    if len(ts_fs) == 0:
+                        raise Exception
+                    ts = None
+                    for f in ts_fs:
+                        if ts is None:
+                            ts = np.load(
+                                f, 
+                                allow_pickle=True, 
+                                encoding='latin1'
+                                )
+                        else:
+                            tmp = np.load(
+                                f,
+                                allow_pickle=True,
+                                encoding='latin1'
+                                )
+                            ts = np.hstack([ts, tmp])
                 else:
-                    ts = np.load(self.ts_path + 'ts_dists_{}year_density_{:.2e}_'.format(self.data_years, density)
-                                    + self.evol_lumi_str + self.steady_str + '.npy')
+                    ts_fs = glob(
+                        self.ts_path + \
+                        'ts_dists_{}year_density_{:.2e}_'.format(
+                            self.data_years, density) + \
+                        self.evol_lumi_str + self.steady_str + '*.npy'
+                        )
+                    if len(ts_fs) == 0:
+                        raise Exception
+                    ts = None
+                    for f in ts_fs:
+                        if ts is None:
+                            ts = np.load(f)
+                        else:
+                            tmp = np.load(f)
+                            ts = np.hstack([ts, tmp])
             except IOError as e:
                 continue
             ts_bins = np.logspace(-1., 2., 31) if log_ts else np.linspace(0., 15., 31)
@@ -535,7 +663,7 @@ class UniversePlotter():
             elif self.transient:
                 problem_inds = [198]
             else:
-                problem_inds = [73,  76, 142, 147, 157, 198, 250]
+                problem_inds = [73,  76, 142, 147, 157, 198, 249]
             if ind in problem_inds:
                 continue
             else:
@@ -548,19 +676,17 @@ class UniversePlotter():
                             allow_pickle=True)
                     else:
                         trials = np.load(trials_file)
-                    ts = np.random.choice(trials['ts_prior'], size=n_trials)
+                    ts = self.rng.choice(trials['ts_prior'], size=n_trials)
                 else:
                     try:
                         trials_files = glob(bg_trials + smeared_str 
-                                    + 'index_{}_steady_seed_*.pkl'.format(ind))
-                        trials = []
-                        for f in trials_files:
-                            if py_ver == 3:
-                                trials.extend(np.load(f, encoding='latin1',
-                                    allow_pickle=True)['TS'])
-                            else:
-                                trials.extend(np.load(f)['TS'])
-                        ts = np.random.choice(np.array(trials), size=n_trials)
+                                    + 'index_{}_steady.pkl'.format(ind))
+                        if py_ver == 3:
+                            trials = np.load(trials_files[0], encoding='latin1',
+                                allow_pickle=True)['TS']
+                        else:
+                            trials = np.load(trials_files[0])['TS']
+                        ts = self.rng.choice(np.array(trials), size=n_trials)
                     except:
                         print("NO STEADY TRIALS FOR INDEX {}".format(ind))
                 TSs.append(ts)
@@ -573,20 +699,19 @@ class UniversePlotter():
         self.stacked_ts = stacked_ts
         return self.background_median_ts
 
-    def get_overall_background_p(self, n_trials=5000):
+    def get_overall_background_p(self, with_tmps=False):
         r'''Sample alert event background distributions
         to get the overall stacked background binomial-p value distribution'''
         bg_trials = followup_trials_path + 'bg/'
-        if self.sigs is None:
-            self.sigs = self.load_signalness_array()
         pvals = []
+        n_trials = None
         for ind in range(len(skymap_files)):
             if self.transient and self.delta_t == 1000.:
                 problem_inds = [198, 95, 92]
             elif self.transient:
                 problem_inds = [198]
             else:
-                problem_inds = [73,  76, 142, 147, 157, 198, 250]
+                problem_inds = [73,  76, 142, 147, 157, 198, 249]
             if ind in problem_inds:
                 continue
             else:
@@ -599,25 +724,32 @@ class UniversePlotter():
                             encoding='latin1', allow_pickle=True)
                     else:
                         trials = np.load(trials_file)
+                    sorted_trial_inds = np.argsort(np.array(trials['ts_prior']))
                     cdf = np.cumsum(np.sort(np.array(trials['ts_prior'])))
                 else:
                     trials_files = glob(bg_trials + smeared_str 
-                                + 'index_{}_*_steady_seed_*.pkl'.format(ind))
-                    trials = []
-                    for f in trials_files:
-                        if py_ver == 3:
-                            trials.extend(np.load(f, encoding='latin1', 
-                                allow_pickle=True)['TS'])
-                        else:    
-                            trials.extend(np.load(f)['TS'])
+                                + 'index_{}_*_steady.pkl'.format(ind))
+                    if py_ver == 3:
+                        trials = np.load(trials_files[0], encoding='latin1',
+                            allow_pickle=True)['TS']
+                    else:
+                        trials = np.load(trials_files[0])['TS']
+                    sorted_trial_inds = np.argsort(np.array(trials))
                     cdf = np.cumsum(np.sort(np.array(trials)))
                 inds = np.linspace(0., 1., len(cdf))
-                inds = np.where(inds==0., np.min(inds[inds != 0.]), inds)[::-1]
+                inds = np.where(inds==0., self.rng.uniform(
+                    low=0.0, high=np.min(inds[inds != 0.]), size=1)[0], inds)[::-1]
                 ps = np.where(cdf != 0.0, inds, 1.0)
-                pvals.append(np.random.choice(ps, size = n_trials))
+                reverse_arg_sort = np.argsort(sorted_trial_inds)
+                ps = ps[reverse_arg_sort]
+                pvals.append(ps)
         pvals = np.array(pvals)
         background_binomial = []; counter = 0;
+        if with_tmps:
+            tmps = []
         for realization in pvals.T:
+            if with_tmps:
+                tmps.append([])
             counter += 1
             realization = np.sort(realization)
             obs_p = 1.
@@ -627,6 +759,8 @@ class UniversePlotter():
                     if tmp == 0.0:
                         print("WHY DOES THE BINOMIAL VALUE EQUAL ZERO")
                     obs_p = tmp
+                if with_tmps:
+                    tmps[-1].append(tmp)
             background_binomial.append(obs_p)
         background_binomial = np.array(background_binomial)
         binomial_median = np.percentile(background_binomial, 50.)
@@ -635,6 +769,8 @@ class UniversePlotter():
         self.background_lower_10_p = np.percentile(background_binomial, 90.)
         self.background_three_sigma_p = np.percentile(background_binomial, 0.13)
         self.stacked_p = background_binomial
+        if with_tmps:
+            return self.background_median_p, tmps
         return self.background_median_p
 
     def inject_and_fit_dens_lumi_plot(self, dens, lumi, in_ts=True, upper_limit=False):
@@ -648,15 +784,41 @@ class UniversePlotter():
             - lumi (float): Luminosity of sources
         '''
         fmt_path = 'ts_dists_{}year_density_{:.2e}_' + self.evol_lumi_str + \
-                        '_manual_lumi_{:.1e}' + self.steady_str + '.npy'
+                        '_manual_lumi_{:.1e}' + self.steady_str + '*.npy'
         if py_ver == 3:
-            trials = np.load(self.ts_path + fmt_path.format(
-                self.data_years, dens, lumi), allow_pickle=True,
-                encoding='latin1')
+            trials_fs = glob(self.ts_path \
+                + fmt_path.format(self.data_years, dens, lumi)
+                )
+            trials = None
+            for f in trials_fs:
+                if trials is None:
+                    trials = np.load(
+                        f, 
+                        allow_pickle=True, 
+                        encoding='latin1'
+                        )
+                else:
+                    tmp = np.load(
+                        f,
+                        allow_pickle=True,
+                        encoding='latin1'
+                        )
+                    trials = np.hstack([trials, tmp])
         else:
-            trials = np.load(self.ts_path + fmt_path.format(self.data_years, dens, lumi))
+            trials_fs = glob(self.ts_path \
+                + fmt_path.format(self.data_years, dens, lumi)
+                )
+            if len(trials_fs) == 0:
+                raise IOError
+            trials = None
+            for f in trials_fs:
+                if trials is None:
+                    trials = np.load(f)
+                else:
+                    tmp = np.load(f)
+                    trials = np.hstack([trials, tmp])
         trials = trials[0] if in_ts else trials[2]
-        unblinded_val = np.random.choice(trials)
+        unblinded_val = self.rng.choice(trials)
         self.inject_and_fit_TS_plot(unblinded_val, in_ts=in_ts, show=False, title=False, upper_limit=upper_limit)
         plt.scatter(np.log10(dens), np.log10(lumi / self.time_window_per_year), 
                         marker='*', color = 'k', s=100)
@@ -678,15 +840,19 @@ class UniversePlotter():
         levels = [90., 100.] if upper_limit else [0., 50., 90.]
         csf = ax.contourf(X, Y, cont, cmap=self.cmap, levels = levels)
         xs = np.logspace(-11., -6., 1000)
-        ys_max = self.no_evol_energy_density / xs / self.seconds_per_year if self.transient else self.no_evol_energy_density / xs
-        ys_min = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
-        plt.fill_between(np.log10(xs), np.log10(ys_min), np.log10(ys_max), 
-                color = sns.xkcd_rgb['dodger blue'], alpha = 0.3, lw=0.0, zorder=10)
+        ys_median = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
+        plt.plot(np.log10(xs), np.log10(ys_median), color = sns.xkcd_rgb['dodger blue'], lw=1.5)
+        for sig in ['one_sigma', 'two_sigma']:
+            upper_factor = self.energy_density_uncertainty['plus_'+sig] / self.energy_density
+            lower_factor = self.energy_density_uncertainty['minus_'+sig] / self.energy_density
+            alpha = 0.45 if sig is 'two_sigma' else 0.75
+            plt.fill_between(np.log10(xs), np.log10(ys_median * lower_factor), np.log10(ys_median * upper_factor), 
+                    color = sns.xkcd_rgb['dodger blue'], alpha = alpha, lw=0.0, zorder=10)
         if not upper_limit:
             legend_elements = [Patch(facecolor=csf.cmap.colors[0], label='50\%'),
                         Patch(facecolor=csf.cmap.colors[-2], label='90\%')]
             ax.legend(handles=legend_elements, loc=3)
-        ax.set_ylim(np.log10(ys_min.min()*0.5), np.log10(ys_max.max()*2.))
+        ax.set_ylim(np.log10(ys_median.min()*0.5), np.log10(ys_median.max()*2.))
         ax.grid(lw=0.0)
         ax.set_ylabel(self.lumi_label, fontsize = 22)
         ax.set_xlabel(self.density_label, fontsize = 22)
@@ -722,7 +888,7 @@ class UniversePlotter():
             - upper_limit (bool): If true, return as value compatible with upper limit
         '''
         fmt_path = 'ts_dists_{}year_density_{:.2e}_' + self.evol_lumi_str + \
-                        '_manual_lumi_{:.1e}' + self.steady_str + '.npy'
+                        '_manual_lumi_{:.1e}' + self.steady_str + '*.npy'
         ts_p_ind = 0 if in_ts else 2
         containment = np.zeros((self.luminosities.size, self.densities.size)); 
         for ii, lumi in enumerate(self.luminosities):
@@ -735,12 +901,37 @@ class UniversePlotter():
                 else:
                     try:
                         if py_ver == 3:
-                            trials = np.load(self.ts_path \
-                                + fmt_path.format(self.data_years, dens, lumi),
-                                allow_pickle=True, encoding='latin1')
+                            trials_fs = glob(self.ts_path \
+                                + fmt_path.format(self.data_years, dens, lumi)
+                                )
+                            trials = None
+                            for f in trials_fs:
+                                if trials is None:
+                                    trials = np.load(
+                                        f, 
+                                        allow_pickle=True, 
+                                        encoding='latin1'
+                                        )
+                                else:
+                                    tmp = np.load(
+                                        f,
+                                        allow_pickle=True,
+                                        encoding='latin1'
+                                        )
+                                    trials = np.hstack([trials, tmp])
                         else:
-                            trials = np.load(self.ts_path \
-                                + fmt_path.format(self.data_years, dens, lumi))
+                            trials_fs = glob(self.ts_path \
+                                + fmt_path.format(self.data_years, dens, lumi)
+                                )
+                            if len(trials_fs) == 0:
+                                raise IOError
+                            trials = None
+                            for f in trials_fs:
+                                if trials is None:
+                                    trials = np.load(f)
+                                else:
+                                    tmp = np.load(f)
+                                    trials = np.hstack([trials, tmp])
                         containment[ii, jj] = sp.stats.percentileofscore(trials[ts_p_ind], obs_val)
                     except IOError as e:
                         containment[ii, jj] = 0.
@@ -785,7 +976,8 @@ class UniversePlotter():
         sigs = np.delete(sigs_all, msk_inds)
         return sigs
 
-    def brazil_bands(self, in_ts=False, rotated=False, compare=False):
+    def brazil_bands(self, in_ts=False, rotated=False, compare=False, 
+        with_result=False, result=None):
         r'''Two dimensional contour plot to show the sensitivity of the analysis
         in the luminosity-density plane, with full brazil bands, not just the 
         median upper limit
@@ -822,10 +1014,31 @@ class UniversePlotter():
         level = levels[len(levels)//2]
         linestyle='solid'
         reference_val = np.percentile(background_dist, level)
-        sens_disc = comp_factor * (lower_bound_comp - reference_val)
+        if in_ts:
+            sens_disc = comp_factor * (lower_bound_comp - reference_val)
+        else:
+            sens_disc = comp_factor * (np.log10(lower_bound_comp) - np.log10(reference_val))
+        sens_alpha = 1. if not with_result else 0.5
         cs_ts = ax.contour(X, Y, sens_disc, colors=['k'], 
-                        levels=[0.0], linewidths=2., linestyles=linestyle)
-        ax.clabel(cs_ts, cs_ts.levels, inline=True, fmt='Sensitivity', fontsize=14)
+                        levels=[0.0], 
+                        linewidths=2., linestyles=linestyle,
+                        alpha=sens_alpha, zorder=6)
+        text_loc = [(-9.9, 43.2)] if rotated else [(-9.9, 53.5)]
+        ax.clabel(cs_ts, cs_ts.levels, inline=True, fmt='Sensitivity', fontsize=14,
+            manual=text_loc)
+
+        if with_result:
+            if in_ts:
+                upper_lim = comp_factor * (lower_bound_comp - result)
+            else:
+                upper_lim = comp_factor * (np.log10(lower_bound_comp) - np.log10(result))
+            cs_ts_res = ax.contour(X, Y, upper_lim, colors=['k'], 
+                        levels=[0.0], 
+                        linewidths=2., linestyles=linestyle, zorder=6)
+            text_loc = [(-10.4, 43.2)] if rotated else [(-10.5, 53.5)]
+            ax.clabel(cs_ts_res, cs_ts.levels, inline=True, 
+                fmt=r'Upper limit', fontsize=14, manual=text_loc,
+                rightside_up=False, zorder=5)
 
         # central 68% containment band
         for band_num in range(len(levels)//2):
@@ -835,41 +1048,50 @@ class UniversePlotter():
             reference_val_lower = np.percentile(background_dist, lower_level)
             reference_val_upper = np.percentile(background_dist, upper_level)
 
-            sens_disc_lower = comp_factor * (lower_bound_comp - reference_val_lower)
-            sens_disc_upper = comp_factor * (lower_bound_comp - reference_val_upper)
+            if in_ts:
+                sens_disc_lower = comp_factor * (lower_bound_comp - reference_val_lower)
+                sens_disc_upper = comp_factor * (lower_bound_comp - reference_val_upper)
+            else:
+                sens_disc_lower = comp_factor * (np.log10(lower_bound_comp) - np.log10(reference_val_lower))
+                sens_disc_upper = comp_factor * (np.log10(lower_bound_comp) - np.log10(reference_val_upper))
 
             sens_disc = sens_disc_lower * sens_disc_upper
           
             cs_ts = ax.contour(X, Y, sens_disc, colors=['k'], 
-                                  levels=[0.0], linewidths=1.5, linestyles='dashed')
+                                  levels=[0.0], linewidths=1.5, linestyles='dashed',
+                                  alpha=sens_alpha, zorder=5)
             csf = ax.contourf(X, Y, sens_disc, cmap=self.cmap, 
-                                levels=[np.min(sens_disc), 0.0])
-            ax.clabel(cs_ts, cs_ts.levels, inline=True, fmt=r'$\pm 1 \sigma$', fontsize=14)
+                                levels=[np.min(sens_disc), 0.0],
+                                alpha=sens_alpha, zorder=5)
+            text_loc = [(-9.0, 43.), (-9.0, 43.5)] if rotated else [(-9., 52.), (-9., 53.)]
+            ax.clabel(cs_ts, cs_ts.levels, inline=True, fmt=r'$\pm 1 \sigma$', fontsize=14,
+                manual=text_loc)
             
         xs = np.logspace(-11., -6., 1000)
         ys_median = self.energy_density / xs / self.seconds_per_year if self.transient else self.energy_density / xs
         
         if not rotated:
-            plt.plot(np.log10(xs), np.log10(ys_median), color = sns.xkcd_rgb['dodger blue'], lw=1.5)
+            plt.plot(np.log10(xs), np.log10(ys_median), color = sns.xkcd_rgb['dodger blue'], lw=1.5, zorder=1)
             for sig in ['one_sigma', 'two_sigma']:
                 upper_factor = self.energy_density_uncertainty['plus_'+sig] / self.energy_density
                 lower_factor = self.energy_density_uncertainty['minus_'+sig] / self.energy_density
                 alpha = 0.45 if sig is 'two_sigma' else 0.75
                 plt.fill_between(np.log10(xs), np.log10(ys_median * lower_factor), np.log10(ys_median * upper_factor), 
-                        color = sns.xkcd_rgb['dodger blue'], alpha = alpha, lw=0.0, zorder=10)
+                        color = sns.xkcd_rgb['dodger blue'], alpha = alpha, lw=0.0, zorder=1)
         else:
-            plt.plot(np.log10(xs), np.log10(ys_median*xs), color = sns.xkcd_rgb['dodger blue'], lw=1.5)
+            plt.plot(np.log10(xs), np.log10(ys_median*xs), color = sns.xkcd_rgb['dodger blue'], lw=1.5, zorder=1)
             for sig in ['one_sigma', 'two_sigma']:
                 upper_factor = self.energy_density_uncertainty['plus_'+sig] / self.energy_density
                 lower_factor = self.energy_density_uncertainty['minus_'+sig] / self.energy_density
                 alpha = 0.45 if sig is 'two_sigma' else 0.75
                 plt.fill_between(np.log10(xs), np.log10(ys_median * lower_factor * xs), np.log10(ys_median * upper_factor * xs), 
-                        color = sns.xkcd_rgb['dodger blue'], alpha = alpha, lw=0.0, zorder=10)
+                        color = sns.xkcd_rgb['dodger blue'], alpha = alpha, lw=0.0, zorder=1)
         if rotated:
             plt.text(-10, np.log10(np.max(ys_median*xs*upper_factor)*1.1), 'Diffuse', 
                             color = sns.xkcd_rgb['dodger blue'], rotation=0, fontsize=18)
         else:
-            plt.text(-9, 53.6, 'Diffuse', color = sns.xkcd_rgb['dodger blue'], rotation=-28, fontsize=18)
+            diff_yloc = 53.0 if not self.transient else 53.5
+            plt.text(-9, diff_yloc, 'Diffuse', color = sns.xkcd_rgb['dodger blue'], rotation=-28, fontsize=18)
         plt.xlim(-11., -6.)
         if rotated:
             plt.ylim(np.log10(np.min(ys_median*xs)*1e-2), np.log10(np.max(ys_median*xs)*5))
@@ -900,7 +1122,7 @@ class UniversePlotter():
         plt.legend(handles=custom_labs, loc=leg_loc).set_zorder(20)
         plt.xlabel(self.density_label, fontsize = 22)
         title = self.lumi_str + ', ' + self.evol_str
-        plt.title(title)
+        # plt.title(title)
         rot_str = '' if not rotated else 'rotated_'
         if self.save_figs:
             for ftype in ['.png', '.pdf']:

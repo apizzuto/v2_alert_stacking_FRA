@@ -2,6 +2,7 @@
 import argparse
 import time
 import pickle
+import os
 import numpy as np
 import pandas as pd
 
@@ -12,7 +13,7 @@ f_path = utils.get_francis_path()
 
 def run_signal_trials(
     gamma, index, ntrials, seed, verbose=True, 
-    fit=True, smear=True
+    poisson=True, smear=True
     ):
     """Run the signal trials for a time-integrated alert followup.
     
@@ -22,19 +23,26 @@ def run_signal_trials(
         ntrials (int): number of trials
         seed (int): random number seed
         verbose (bool, default=True): print output
-        fit (bool, default=True): if True, do not poisson fluctuate fluxes
+        poisson (bool, default=True): poisson fluctuate fluxes
         smear (bool, default=True): Account for sytematics in the skymap
             millipede localization
     """
-
-    poisson=~fit
     smear_str = 'smeared/' if smear else 'norm_prob/'
-    outdir = 'fits' if fit else 'sensitivity'
+    outdir = 'fits' if not poisson else 'sensitivity'
     alert_df = pd.read_csv(f_path + 'icecube_misc/alert_dataframe.csv')
     event_id = alert_df.iloc[index]['Event ID']
     run_id = alert_df.iloc[index]['Run ID']
-    outfile = '/data/user/apizzuto/fast_response_skylab/' \
-        + 'alert_event_followup/analysis_trials/' \
+    # Commented path is the original trials location
+    # base_trial_path = '/data/user/apizzuto/fast_response_skylab/' \
+    #     + 'alert_event_followup/analysis_trials/'
+    base_trial_path = os.path.join(os.path.expandvars("$PWD"), "analysis_trials/")
+    if not os.path.exists(base_trial_path):
+        os.mkdir(base_trial_path)
+    if not os.path.exists(base_trial_path + outdir):
+        os.mkdir(base_trial_path + outdir)
+    if not os.path.exists(base_trial_path + outdir + '/' + smear_str):
+        os.mkdir(base_trial_path + outdir + '/' + smear_str)
+    outfile = base_trial_path \
         + '{}/{}index_{}_run_{}_event_{}_steady_seed_{}_gamma_{}.pkl'.format(
             outdir, smear_str, index, run_id, event_id, seed, gamma
             )
@@ -58,6 +66,9 @@ def run_signal_trials(
         np.array([15, 20, 25, 30, 40, 50, 60, 70])
         )
 
+    # Prior injector injects a constant flux, not a constant number
+    # of events. The scale_factor calculates a rough conversion between
+    # the input number of events to the injector and the actual injected mean
     scale_arr = []
     if gamma > 2.0:
         step_size = 10
@@ -152,16 +163,16 @@ if __name__ == '__main__':
         help="Assorted print statements flag"
         )
     parser.add_argument(
-        '--fit', action='store_true', default=False,
-        help="Include poisson fluctuations by default or raise this flag"
+        '--no-poisson', action='store_true', default=False,
+        help="Poisson fluctuations are included by default, to disable them raise this flag"
         )                
     parser.add_argument(
-        '--smear', default=False, action='store_true',
-        help='Include systematics by smearing norm. prob., The unblinded version will use this flag'
+        '--no-smear', default=False, action='store_true',
+        help='Do not include systematics, instead directly convert LLH to norm. prob.'
         )
     args = parser.parse_args()
 
     run_signal_trials(
         args.g, args.i, args.ntrials, args.rng, verbose=args.verbose, 
-        fit=args.fit, smear=args.smear
+        poisson=not args.no_poisson, smear=not args.no_smear
         )

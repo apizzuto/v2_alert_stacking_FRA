@@ -8,7 +8,7 @@ information about each trial to outfile
     --i index: alert event index
     --ntrials: number of trials to perform
 '''
-import time, pickle, argparse
+import time, pickle, argparse, os
 import numpy as np
 import pandas as pd
 
@@ -34,9 +34,18 @@ def run_background_trials(
     alert_df = pd.read_csv(f_path + 'icecube_misc/alert_dataframe.csv')
     event_id = alert_df.iloc[index]['Event ID']
     run_id = alert_df.iloc[index]['Run ID']
-    outfile = '/data/user/apizzuto/fast_response_skylab/' \
-        + 'alert_event_followup/analysis_trials/bg/' \
-        + '{}index_{}_run_{}_event_{}_steady_seed_{}.pkl'.format(smear_str, index, run_id, event_id, seed)
+    # Commented path is the original trials location
+    # base_trial_path = '/data/user/apizzuto/fast_response_skylab/' \
+    #     + 'alert_event_followup/analysis_trials/'
+    base_trial_path = os.path.join(os.path.expandvars("$PWD"), "analysis_trials/")
+    if not os.path.exists(base_trial_path):
+        os.mkdir(base_trial_path)
+    if not os.path.exists(base_trial_path + 'bg/'):
+        os.mkdir(base_trial_path + 'bg/')
+    if not os.path.exists(base_trial_path + 'bg/' + smear_str):
+        os.mkdir(base_trial_path + 'bg/' + smear_str)
+    outfile = base_trial_path + 'bg/' \
+        + '{}/before_combining_seeds/index_{}_run_{}_event_{}_steady_seed_{}.pkl'.format(smear_str, index, run_id, event_id, seed)
 
     t0 = time.time()
     nside = 2**7
@@ -107,12 +116,12 @@ if __name__ == "__main__":
         help="Assorted print statements flag"
         )
     parser.add_argument(
-        '--smear', default=False, action='store_true',
-        help='Include systematics by smearing norm. prob.'
+        '--no-smear', default=False, action='store_true',
+        help='Do not include systematics, instead directly convert LLH to norm. prob.'
         )
     args = parser.parse_args()
 
     run_background_trials(
-        args.i, args.rng, smear=args.smear, ntrials=args.ntrials,
+        args.i, args.rng, smear=not args.no_smear, ntrials=args.ntrials,
         verbose=args.verbose
         )

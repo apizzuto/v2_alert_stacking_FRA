@@ -7,7 +7,7 @@ r'''Script to initiate fast reponse
     Date: April 9, 2019
     '''
 
-import os.path,sys,argparse
+import os.path,sys,argparse, os, pwd
 import subprocess
 import warnings
 import utils
@@ -33,9 +33,15 @@ parser.add_argument('--skip-events', default=None,
                     "Example --skip-events  127853:67093193,128290:6888376")
 parser.add_argument('--ntrials', default=1000, type=int,
                     help="Number of background trials to perform")
-parser.add_argument('--document', default=False, action='store_true')
-parser.add_argument('--nodiag', default=False, action='store_true')
-parser.add_argument('--alert_event', default=False, action='store_true')
+parser.add_argument('--document', default=False, action='store_true',
+                    help='Update the fast response web page. Only for those with permissions')
+parser.add_argument('--nodiag', default=False, action='store_true',
+                    help='If True, do not create rate diagnostic plots from i3live.' /
+                        + 'This is helpful for very old alerts where it is hard to ' /
+                        + 'query i3live for run information')
+parser.add_argument('--alert_event', default=False, action='store_true',
+                    help='This flag tells the FRA that we are following up an alert '/
+                        + 'event, which fixes the energy term in the LLH to 2.5')
 args = parser.parse_args()
 
 subprocess.call(['clear'])
@@ -96,6 +102,10 @@ if not args.nodiag:
 results = f.save_results()
 f.generate_report()
 if args.document:
-    subprocess.call(['cp','-r',results['analysispath'],
-        '/home/apizzuto/public_html/FastResponse/webpage/output/{}'.format(results['analysisid'])])
-    utils.updateFastResponseWeb(results)
+    username = pwd.getpwuid(os.getuid())[0]
+    # These commands update the official fast response web results,
+    # so we keep this hardcoded path
+    if username == 'apizzuto':
+        subprocess.call(['cp','-r',results['analysispath'],
+            '/home/apizzuto/public_html/FastResponse/webpage/output/{}'.format(results['analysisid'])])
+        utils.updateFastResponseWeb(results)

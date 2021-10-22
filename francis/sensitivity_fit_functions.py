@@ -371,12 +371,15 @@ def find_all_sens(delta_t, smear=True, with_disc=True, disc_conf=0.5,
         smear (bool, default=True): Correct for systematics in skymap treatment
         with_disc (bool, default=True): Also calculate discovery potential
         disc_conf (bool, default=0.5): Confidence level for discovery potential
-        disc_thresh (float): p-value for discovery potential (default is 3 sigma)
+        disc_thresh (float): p-value threshold for discovery potential 
+            (default is the p-value that corresponds to 3 sigma). e.g. 1.-0.0013 is
+            the fraction of the BG CDF contained below the 3 sigma threshold
 
     Returns:
         array: List of sensitivities
     """
-    num_alerts = 276
+    # num_alerts fixed to the length of the v2 alert catalog
+    num_alerts = 275
     sensitivities = np.zeros(num_alerts)
     if with_disc:
         discoveries = np.zeros(num_alerts)
@@ -496,7 +499,7 @@ def fitting_bias_summary(delta_t, sigs=[2., 5., 10.], smear=True, containment=50
     return bias, spread
 
 def background(index, delta_t, smear=True):
-    """Obtain the background distributions for an event
+    """Load the background distributions for an event
     
     Args:
         index (int): Alert event index 
@@ -516,7 +519,7 @@ def background(index, delta_t, smear=True):
             bg_trials = pickle.load(f)
     return bg_trials
 
-def plot_zoom_from_map(skymap, ind, reso=1., cmap=None, draw_contour=True, ax=None, 
+def plot_zoom_from_map(skymap, ind, cmap=None, draw_contour=True, ax=None, 
                       col_label= r'$\log_{10}$(prob.)'):
     """Plot skymap of an alert event
     
@@ -567,7 +570,7 @@ def plot_zoom_from_map(skymap, ind, reso=1., cmap=None, draw_contour=True, ax=No
 
 
 def background_hotspot_map(ind, delta_t, smear=True):
-    """Show where background trials recover hotspots
+    """Show where background trials end up fitting hotspots
     
     Args:
         ind (int): Alert event index 
@@ -600,9 +603,6 @@ def get_true_fit(ind, delta_t, smear=True):
     res = np.load(res_f[0])
     return res
 
-##############################################################################
-############# REPEAT THIS IN THE STEADY FITS FILE
-##############################################################################
 def get_true_pval(ind, delta_t, smear=True):
     """Get unblinded p-value for an alert followup
     
@@ -630,6 +630,9 @@ def get_true_pval_list(delta_t, smear=True):
     Returns:
         arr: pre trial p-values for alert followup
     """
+    # Certain skymaps are excluded from the analysis, for reasons
+    # on each one, see the official analysis wiki under "Excluded Events"
+    # https://wiki.icecube.wisc.edu/index.php/Fast_Response_Analysis/FRA_archival_stacking_v2_alerts
     problem_inds = [198, 95, 92] if delta_t == 1000. else [198]
     pval_list = []
     for ind in range(len(skymap_files)):

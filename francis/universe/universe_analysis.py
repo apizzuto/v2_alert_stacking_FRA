@@ -6,24 +6,17 @@ import pickle
 import csv
 import sys
 from francis.universe.transient_universe import TransientUniverse, SteadyUniverse
+from francis.universe.transient_universe import *
+from francis import utils
+f_path = utils.get_francis_path()
 
-eff_area_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/effective_areas_alerts/'
+eff_area_path = f_path + 'icecube_misc/effective_areas_alerts/'
 
-def centers(arr):
-    return arr[:-1] + np.diff(arr) / 2.
-
-def find_nearest(array, value):
-    array = np.asarray(array)
-    idx = (np.abs(array - value)).argmin()
-    return array[idx]
-
-def find_nearest_ind(array, value):
-    array = np.asarray(array) 
-    idx = (np.abs(array - value)).argmin()
-    return idx
-
+# Commented paths point to original file locations
 bg_trials = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/bg/'
 signal_trials = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/fits/'
+# bg_trials = '/data/ana/analyses/NuSources/2021_v2_alert_stacking_FRA/analysis_trials/bg/'
+# signal_trials = '/data/ana/analyses/NuSources/2021_v2_alert_stacking_FRA/analysis_trials/fits/'
 
 class UniverseAnalysis():
     r'''Given cosmological parameters, calculate the expected TS distribution
@@ -37,20 +30,24 @@ class UniverseAnalysis():
         self.diffuse_flux_norm = diffuse_flux_norm
         self.diffuse_flux_ind = diffuse_flux_ind
         self.deltaT = kwargs.pop('deltaT', None)
+        self.sigma = kwargs.pop('sigma', 1.0)
         self.transient = True if self.deltaT is not None else False
         if self.deltaT is not None:
             kwargs['timescale'] = self.deltaT
         self.seed = kwargs.pop('seed', 1234)
         if self.transient:
             self.universe = TransientUniverse(self.lumi, self.evol, self.density,
-                self.diffuse_flux_norm, self.diffuse_flux_ind, seed=self.seed, **kwargs)
+                self.diffuse_flux_norm, self.diffuse_flux_ind, seed=self.seed, sigma=self.sigma,
+                **kwargs)
         else:
             self.universe = SteadyUniverse(self.lumi, self.evol, self.density,
-                self.diffuse_flux_norm, self.diffuse_flux_ind, seed=self.seed, **kwargs)
+                self.diffuse_flux_norm, self.diffuse_flux_ind, seed=self.seed, sigma=self.sigma,
+                **kwargs)
         self.smear = kwargs.pop('smeared', True)
         self.smear_str = 'smeared/' if self.smear else 'norm_prob/'
         self.verbose = kwargs.pop('verbose', False)
-        self.initialize_universe() 
+        self.rng = np.random.RandomState(self.seed)
+        self.initialize_universe()
 
     def print_analysis_info(self):
         r'''Print a message with info about the source once
@@ -122,6 +119,7 @@ class UniverseAnalysis():
         if self.verbose:
             print("Recreating universe for more trials, updating seed")
         self.seed = 1 if self.seed is None else self.seed + 1
+        self.rng = np.random.RandomState(self.seed)
         self.universe.seed = self.seed
         self.universe.create_universe()
         self.universe.find_alerts()
@@ -183,7 +181,7 @@ class UniverseAnalysis():
                 trials = np.load(trials_file, allow_pickle=True, encoding='latin1')
             else:
                 trials = np.load(trials_file)
-            ts = np.random.choice(trials['ts_prior'])
+            ts = self.rng.choice(trials['ts_prior'])
             if calc_p:
                 if ts == 0:
                     pval = 1.0
@@ -192,15 +190,9 @@ class UniverseAnalysis():
                     if pval == 0.:
                         pval = 1./np.array(trials['ts_prior']).size
         else:
-            fs = glob(bg_trials + self.smear_str + 'index_{}_*_steady_seed_*.pkl'.format(ind))
-            tmp_ds = [np.load(f, allow_pickle=True, encoding='latin1') for f in fs]
-            trials = {k:[] for k in tmp_ds[0].keys()}
-            for k in trials.keys():
-                for d in tmp_ds:
-                    trials[k] += d[k] 
-            for k in trials.keys():
-                trials[k] = np.array(trials[k])
-            ts = np.random.choice(trials['TS'])
+            fs = glob(bg_trials + self.smear_str + 'index_{}_*_steady.pkl'.format(ind))
+            trials = np.load(fs[0], allow_pickle=True, encoding='latin1')
+            ts = self.rng.choice(trials['TS'])
             if calc_p:
                 if ts == 0:
                     pval = 1.0
@@ -228,8 +220,8 @@ class UniverseAnalysis():
                 else:
                     trials = np.load(trials_file)
             else:
-                fs = glob(signal_trials + self.smear_str + 'index_{}_*_steady_seed_*.pkl'.format(ind))
-                t_file = np.random.choice(fs)
+                fs = glob(signal_trials + self.smear_str + 'index_{}_*_steady_gamma_2.5.pkl'.format(ind))
+                t_file = fs[0]
                 if sys.version[0] == '3':
                     trials = np.load(t_file, allow_pickle=True, encoding='latin1')
                 else:
@@ -251,7 +243,7 @@ class UniverseAnalysis():
                         print("NO TRIALS WITH {} INJECTED EVENTS".format(N))
                     inds = np.argwhere(np.array(trials[ns_key]) == np.max(trials[ns_key])).flatten()
             ts = np.array(trials['ts'])[inds] if self.transient else np.array(trials['TS'])[inds]
-            ts = np.random.choice(ts)
+            ts = self.rng.choice(ts)
             del trials
         if calc_p:
             pval = self.calculate_trial_pvalue(ind, ts)
@@ -274,15 +266,9 @@ class UniverseAnalysis():
             if pval == 0.:
                 pval = 1./np.array(trials['ts_prior']).size
         else:
-            fs = glob(bg_trials + self.smear_str + 'index_{}_*_steady_seed_*.pkl'.format(ind))
+            fs = glob(bg_trials + self.smear_str + 'index_{}_*_steady.pkl'.format(ind))
             kwargs = {} if not sys.version[0] == '3' else {'encoding': 'latin1', 'allow_pickle': True}
-            tmp_ds = [np.load(f, **kwargs) for f in fs]
-            trials = {k:[] for k in tmp_ds[0].keys()}
-            for k in trials.keys():
-                for d in tmp_ds:
-                    trials[k] += d[k]
-            for k in trials.keys():
-                trials[k] = np.array(trials[k])
+            trials = np.load(fs[0], **kwargs)
             pval = float(np.count_nonzero(trials['TS'] >= TS)) / trials['TS'].size
             if pval == 0.:
                 pval = 1./trials['TS'].size

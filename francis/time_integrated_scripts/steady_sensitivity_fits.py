@@ -25,7 +25,9 @@ alerts = pd.read_csv(
     f_path + 'icecube_misc/alert_dataframe.csv'
     )
 
-base_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/'
+# Commented path points to where trials were originally stored
+# base_path = '/data/user/apizzuto/fast_response_skylab/alert_event_followup/analysis_trials/'
+base_path = '/data/ana/analyses/NuSources/2021_v2_alert_stacking_FRA/analysis_trials/'
 skymap_files = sorted(glob('/data/ana/realtime/alert_catalog_v2/fits_files/Run*.fits.gz'))
 
 
@@ -62,25 +64,15 @@ def load_bg(ind, smear=True):
         dict: Background trial dictionary
     """
     smear_str = 'smeared/' if smear else 'norm_prob/'
-    fs = glob(base_path + 'bg/{}index_{}_run_*_steady_seed_*.pkl'.format(smear_str, ind))
+    fs = glob(base_path + 'bg/{}index_{}_run_*_steady.pkl'.format(smear_str, ind))
     if len(fs) == 0:
         return None
     if py_ver == 3:
         with open(fs[0], 'rb') as f:
             bg_trials = pickle.load(f, encoding='latin1')
-        for fi in fs[1:]:
-            with open(fi, 'rb') as f:
-                tmp = pickle.load(f, encoding='latin1')
-            for k, v in tmp.items():
-                bg_trials[k].extend(v)
     else:
         with open(fs[0], 'r') as f:
             bg_trials = pickle.load(f)
-        for fi in fs[1:]:
-            with open(fi, 'r') as f:
-                tmp = pickle.load(f)
-            for k, v in tmp.items():
-                bg_trials[k].extend(v)
     for k in bg_trials.keys():
         bg_trials[k] = np.array(bg_trials[k])
     return bg_trials 
@@ -99,25 +91,15 @@ def load_sig(ind, gamma=2.0, fits=True, smear=True):
     """
     smear_str = 'smeared/' if smear else 'norm_prob/'
     f_dir = 'fits/{}'.format(smear_str) if fits else 'sensitivity/{}'.format(smear_str)
-    fs = glob(base_path + f_dir + 'index_{}_run_*_steady_seed_*_gamma_{:.1f}.pkl'.format(ind, gamma))
+    fs = glob(base_path + f_dir + 'index_{}_run_*_steady_gamma_{:.1f}.pkl'.format(ind, gamma))
     if len(fs) == 0:
         return None
     if py_ver == 3:
         with open(fs[0], 'rb') as f:
             sig_trials = pickle.load(f, encoding='latin1')
-        for fi in fs[1:]:
-            with open(fi, 'rb') as f:
-                tmp = pickle.load(f, encoding='latin1')
-            for k, v in tmp.items():
-                sig_trials[k].extend(v)
     else:
         with open(fs[0], 'r') as f:
             sig_trials = pickle.load(f)
-        for fi in fs[1:]:
-            with open(fi, 'r') as f:
-                tmp = pickle.load(f)
-            for k, v in tmp.items():
-                sig_trials[k].extend(v)
     for k in sig_trials.keys():
         sig_trials[k] = np.array(sig_trials[k])
     return sig_trials 
@@ -476,31 +458,53 @@ def plot_zoom(ind, LLH=False, reso=1., cmap=None, draw_contour=True, ax=None):
     col_label=r'$-2\Delta \mathrm{LLH}$' if LLH else "Prob."
     plot_color_bar(cmap = cmap, labels = [0, max_color], col_label = col_label)
     
-def plot_labels(src_dec, src_ra, reso):
+def plot_labels(src_dec, src_ra, reso, with_axis_labels=True):
     """Add labels to healpy zoom"""
     fontsize = 20
-    plt.text(-1*np.radians(1.75*reso),np.radians(0), r"%.2f$^{\circ}$"%(np.degrees(src_dec)),
-             horizontalalignment='right',
-             verticalalignment='center', fontsize=fontsize)
-    plt.text(-1*np.radians(1.75*reso),np.radians(reso), r"%.2f$^{\circ}$"%(reso+np.degrees(src_dec)),
-             horizontalalignment='right',
-             verticalalignment='center', fontsize=fontsize)
-    plt.text(-1*np.radians(1.75*reso),np.radians(-reso), r"%.2f$^{\circ}$"%(-reso+np.degrees(src_dec)),
-             horizontalalignment='right',
-             verticalalignment='center', fontsize=fontsize)
-    plt.text(np.radians(0),np.radians(-1.75*reso), r"%.2f$^{\circ}$"%(np.degrees(src_ra)),
-             horizontalalignment='center',
-             verticalalignment='top', fontsize=fontsize)
-    plt.text(np.radians(reso),np.radians(-1.75*reso), r"%.2f$^{\circ}$"%(-reso+np.degrees(src_ra)),
-             horizontalalignment='center',
-             verticalalignment='top', fontsize=fontsize)
-    plt.text(np.radians(-reso),np.radians(-1.75*reso), r"%.2f$^{\circ}$"%(reso+np.degrees(src_ra)),
-             horizontalalignment='center',
-             verticalalignment='top', fontsize=fontsize)
-    plt.text(-1*np.radians(2.4*reso), np.radians(0), r"declination",
-                ha='center', va='center', rotation=90, fontsize=fontsize)
-    plt.text(np.radians(0), np.radians(-2*reso), r"right ascension",
-                ha='center', va='center', fontsize=fontsize)
+    if np.degrees(src_dec) > 65.:
+        ras = [
+            np.degrees(src_ra) - reso*3, 
+            np.degrees(src_ra), 
+            np.degrees(src_ra) + reso*3
+            ]
+    else:
+        ras = [
+            np.degrees(src_ra) - reso, 
+            np.degrees(src_ra), 
+            np.degrees(src_ra) + reso
+            ]
+    decs = [
+        np.degrees(src_dec) - reso, 
+        np.degrees(src_dec), 
+        np.degrees(src_dec) + reso
+        ]
+    for ra in ras:
+        dec_text = np.pi/2. - src_dec + (np.radians(reso) * 5.5/3.)
+        dec_offset = np.abs(np.radians(ra - np.degrees(src_ra)))*np.sin(src_dec)*reso*0.01
+        if ra < 360. and ra > 0:
+            ra_text = "{:.2f}$^\circ$".format(ra) 
+        elif ra > 360.:
+            ra_text = "{:.2f}$^\circ$".format(ra - 360.)
+        else:
+            ra_text = "{:.2f}$^\circ$".format(ra + 360.)
+        hp.projtext(dec_text + dec_offset, np.radians(ra),
+                    ra_text, lonlat=False,
+                    fontsize=20, ha='center')
+    for dec in decs:
+        scale = np.degrees(hp.rotator.angdist(
+            [np.pi/2. - np.radians(dec), src_ra], 
+            [np.pi/2. - np.radians(dec), src_ra + np.radians(1.)]
+            ))
+        ra_text = np.radians(np.degrees(src_ra) + 1.7*reso/scale)
+        hp.projtext(np.pi/2. - np.radians(dec), ra_text,
+                    "{:.2f}$^\circ$".format(dec), lonlat=False,
+                    fontsize=20, ha='right')
+    if with_axis_labels:
+        plt.text(-1*np.radians(2.4*reso), np.radians(0), r"declination",
+                    ha='center', va='center', rotation=90, fontsize=fontsize)
+        plt.text(np.radians(0), np.radians(-2*reso), r"right ascension",
+                    ha='center', va='center', fontsize=fontsize)
+    
     
 def plot_contours(proportions, samples, sample_points, levels = None):# , nside = 128):
     r''' Plot containment contour around desired level.
@@ -568,6 +572,7 @@ def plot_skymap(ind, LLH=True):
     skymap, header = hp.read_map(skymap_files[ind], h=True, verbose=False,
         dtype=None)
     header = {name: val for name, val in header}
+    nside = hp.get_nside(skymap)
     original_LLH = None
     if not LLH:
         original_LLH = np.copy(skymap)

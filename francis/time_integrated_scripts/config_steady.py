@@ -78,6 +78,8 @@ def config(alert_ind, seed = 1, scramble = True, e_range=(0,np.inf), g_range=[1.
     skymap_fits = np.where(skymap_fits > 1e-12, skymap_fits, 0.0)
     skymap_fits = skymap_fits / np.sum(skymap_fits)
     if smear:
+        # 64.2 is the 2deltaLLH threshold used for 90% containment. 
+        # See README for more details
         ninety_msk = skymap_llh < 64.2
         init_nside = hp.get_nside(skymap_llh)
         cdf = np.cumsum(np.sort(skymap_fits[ninety_msk][::-1]))

@@ -11,7 +11,7 @@ setuptools.setup(
     description="Code for following up icecube alert events",
     long_description=long_message,
     #long_description_content_type="text/markdown",
-    url="https://github.com/apizzuto/v2_alert_stacking_FRA",
+    url="https://github.com/icecube/wg-nu-sources/2021_v2_alert_stacking_FRA",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
